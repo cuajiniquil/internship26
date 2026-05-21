@@ -38,7 +38,7 @@ def is_ultrametric(tree):
             return [dist]
         distances = []
         for child in node.children:
-            child_dist = dist + (child.branch_length if child.branch_length else 0)
+            child_dist = dist + (child.length if child.length else 0)
             distances.extend(get_leaf_distances(child, child_dist))
         return distances
     
@@ -92,27 +92,41 @@ def create_balanced_ultrametric_tree(num_taxa):
     """
     def build_balanced(taxa_list, branch_len=1.0):
         if len(taxa_list) == 1:
-            return make_tree(taxa_list[0])
-        
+            return f"{taxa_list[0]}"
+
         mid = len(taxa_list) // 2
         left_tree = build_balanced(taxa_list[:mid], branch_len)
         right_tree = build_balanced(taxa_list[mid:], branch_len)
-        
+
         # Combine with equal branch lengths to maintain ultrametricity
-        left_str = str(left_tree) if hasattr(left_tree, '__str__') else left_tree
-        right_str = str(right_tree) if hasattr(right_tree, '__str__') else right_tree
-        
-        combined = f"({left_str}:{branch_len},{right_str}:{branch_len});"
-        return make_tree(combined)
-    
+        combined = f"({left_tree}:{branch_len},{right_tree}:{branch_len})"
+        return combined
+
     taxa_names = [f"taxon_{i}" for i in range(num_taxa)]
-    return build_balanced(taxa_names)
+    newick_str = build_balanced(taxa_names) + ";"
+    return make_tree(newick_str)
 
 
 def traverse_tree(tree):
     """Traverse all nodes in tree."""
     count = 0
-    for node in tree.traverse(include_root=True):
+    for node in tree.preorder():
+        count += 1
+    return count
+
+
+def traverse_tree_postorder(tree):
+    """Traverse all nodes in tree (postorder)."""
+    count = 0
+    for node in tree.postorder():
+        count += 1
+    return count
+
+
+def traverse_tree_levelorder(tree):
+    """Traverse all nodes in tree (level order)."""
+    count = 0
+    for node in tree.levelorder():
         count += 1
     return count
 
@@ -126,14 +140,26 @@ test_tree = create_balanced_ultrametric_tree(1000)
 
 print("Starting benchmarks...")
 sstart = time.perf_counter()
-sres = benchmark_sys(lambda: traverse_tree(test_tree), 1000)
+sres_preorder = benchmark_sys(lambda: traverse_tree(test_tree), 1000)
+sres_postorder = benchmark_sys(lambda: traverse_tree_postorder(test_tree), 1000)
+sres_levelorder = benchmark_sys(lambda: traverse_tree_levelorder(test_tree), 1000)
+sres_ultrametric = benchmark_sys(lambda: is_ultrametric(test_tree), 1000)
 send = time.perf_counter()
 
 print(f"Benchmark completed in {send - sstart:.2f} seconds")
 
+# Combine all results
+all_times = sres_preorder + sres_postorder + sres_levelorder + sres_ultrametric
+all_methods = (
+    ['preorder'] * len(sres_preorder) +
+    ['postorder'] * len(sres_postorder) +
+    ['levelorder'] * len(sres_levelorder) +
+    ['is_ultrametric'] * len(sres_ultrametric)
+)
+
 cogent3_df = {
-    'traverse': ['tree traversal (cogent3)'] * len(sres),
-    'time': sres
+    'method': all_methods,
+    'time': all_times
 }
 
 
@@ -142,22 +168,28 @@ cogent3_df = {
 #================================
 
 print("\n=== cogent3 Benchmark Statistics ===")
-print(f"Mean time (µs): {np.mean(sres):.4f}")
-print(f"Median time (µs): {np.median(sres):.4f}")
-print(f"Std dev (µs): {np.std(sres):.4f}")
-print(f"Min time (µs): {np.min(sres):.4f}")
-print(f"Max time (µs): {np.max(sres):.4f}")
+for method_name, method_times in [
+    ('preorder', sres_preorder),
+    ('postorder', sres_postorder),
+    ('levelorder', sres_levelorder),
+    ('is_ultrametric', sres_ultrametric)
+]:
+    print(f"\n{method_name}:")
+    print(f"  Mean time (µs): {np.mean(method_times):.4f}")
+    print(f"  Median time (µs): {np.median(method_times):.4f}")
+    print(f"  Std dev (µs): {np.std(method_times):.4f}")
+    print(f"  Min time (µs): {np.min(method_times):.4f}")
+    print(f"  Max time (µs): {np.max(method_times):.4f}")
 
-mx_idx = np.argmax(sres)
-print(f"Slowest traversal (µs): {sres[mx_idx]:.4f}")
-
-# Create violin plot
-fig, ax = plt.subplots(figsize=(8, 6))
-ax.violinplot(sres, positions=[1], widths=0.5)
+# Create violin plot comparing all methods
+fig, ax = plt.subplots(figsize=(10, 6))
+data_by_method = [sres_preorder, sres_postorder, sres_levelorder, sres_ultrametric]
+positions = [1, 2, 3, 4]
+ax.violinplot(data_by_method, positions=positions, widths=0.7)
 ax.set_ylabel('Time (microseconds)')
-ax.set_title('cogent3 Tree Traversal Benchmark')
-ax.set_xticks([1])
-ax.set_xticklabels(['tree traversal (cogent3)'])
+ax.set_title('cogent3 Tree Traversal Methods Comparison')
+ax.set_xticks(positions)
+ax.set_xticklabels(['preorder', 'postorder', 'levelorder', 'is_ultrametric'])
 ax.grid(axis='y', alpha=0.3)
 
 plt.tight_layout()

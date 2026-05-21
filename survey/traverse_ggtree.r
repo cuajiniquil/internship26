@@ -43,20 +43,20 @@ traverse_phylo_tree <- function(tree) {
   edges <- tree$edge
   lengths <- tree$edge.length
   tip.labels <- tree$tip.label
-  
-  # Traverse by walking through edges (simplified version)
-  # In practice, is.ultrametric already does this internally
-  invisible(is.ultrametric(tree))
 }
 
 set.seed(273)
-sstart <- Sys.time()
-sres <- benchmarkSys(traverse_phylo_tree(rcoal(100000)), 1000)
-send  <- Sys.time()
+ststart <- Sys.time()
+stres <- benchmarkSys(traverse_phylo_tree(rcoal(100000)), 1000)
+stend  <- Sys.time()
 
+scscart <- Sys.time()
+scres <- benchmarkSys(is.ultrametric(rcoal(100000)), 1000)
+scend <- Sys.time()
+  
 ggtreedf <- data.frame(
-  traverse = "tree traversal (ggtree)",
-  time = sres
+  traverse = rep(c("manual","isUltrametric"),each=999),
+  time = c(stres,scres)
 )
 
 #================================
@@ -67,7 +67,7 @@ ggplot(ggtreedf, aes(x = traverse, y = time)) +
   geom_violin(fill = "steelblue", alpha = 0.7) + 
   labs(title = "ggtree Tree Traversal Benchmark",
        x = "Method", 
-       y = "Time (microseconds)") +
+       y = "Time ()") +
   theme_minimal()
 
 # Save plot

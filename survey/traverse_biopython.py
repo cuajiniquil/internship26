@@ -127,13 +127,9 @@ def traverse_tree_postorder(tree):
 def traverse_tree_levelorder(tree):
     """Traverse all nodes in tree (level order)."""
     count = 0
-    stack = [tree.root]
-    while stack:
-        clade = stack.pop(0)
+    for clade in tree.find_clades(order="level"):
         count += 1
-        stack.extend(clade.clades)
     return count
-
 
 # Create test tree
 np.random.seed(273)

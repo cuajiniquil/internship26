@@ -30,8 +30,8 @@ benchmarkSys <- function(trset, fn, times) {
 
 set.seed(273)
 trset1 = lapply(1:1000, function(i) rcoal(1000))
-trset2 = lapply(1:1000, function(i) rcoal(100000))
-trset3 = lapply(1:1000, function(i) rcoal(10000000))
+trset2 = lapply(1:1000, function(i) rcoal(10000))
+trset3 = lapply(1:1000, function(i) rcoal(100000))
 
 start <- list()
 totalt <- list()

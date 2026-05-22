@@ -7,7 +7,7 @@ Generates ultrametric trees and measures traversal time.
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-from ete3 import Tree, TreeError
+from ete3 import Tree
 
 
 #================================
@@ -26,9 +26,14 @@ notU = Tree(non_ultra_newick)
 
 def is_ultrametric(tree):
     """
-    Check if all leaf nodes are equidistant from root (ete3 native method).
+    Check if all leaf nodes are equidistant from root.
+    ete3 has no native is_ultrametric(); we compute root-to-leaf distances
+    and verify they are all equal (within floating-point tolerance).
     """
-    return tree.is_ultrametric()
+    distances = [tree.get_distance(leaf) for leaf in tree.iter_leaves()]
+    if len(distances) <= 1:
+        return True
+    return np.allclose(distances, distances[0])
 
 
 print("Ultrametric test tree is ultrametric:", is_ultrametric(trs))

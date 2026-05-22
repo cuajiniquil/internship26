@@ -38,7 +38,7 @@ def is_ultrametric(tree):
             distances.extend(get_leaf_distances(child, child_dist))
         return distances
 
-    distances = get_leaf_distances(tree.root)
+    distances = get_leaf_distances(tree.treenode)
     if len(distances) <= 1:
         return True
     return np.allclose(distances, distances[0])
@@ -50,7 +50,7 @@ print("Non-ultrametric test tree is ultrametric:", is_ultrametric(notU))
 # Print tree info
 print("\nTest tree structure:")
 print(trs)
-print("Test tree leaf count:", len(trs.get_leaves()))
+print("Test tree leaf count:", trs.ntips)
 
 
 #================================
@@ -120,12 +120,8 @@ def traverse_tree_postorder(tree):
 def traverse_tree_levelorder(tree):
     """Traverse all nodes in tree (levelorder)."""
     count = 0
-    stack = [tree.root]
-    while stack:
-        node = stack.pop(0)
+    for node in tree.traverse(strategy="levelorder"):
         count += 1
-        if not node.is_leaf():
-            stack.extend(node.children)
     return count
 
 

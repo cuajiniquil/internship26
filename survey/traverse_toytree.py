@@ -21,7 +21,7 @@ ultra_newick = "((A:1,B:1):1,(C:1,D:1):1);"
 trs = toytree.tree(ultra_newick)
 
 # Create a non-ultrametric tree for comparison
-non_ultra_newick = "((A:5,B:5):2,C:7);"
+non_ultra_newick = "(A:1,B:5);"
 notU = toytree.tree(non_ultra_newick)
 
 def is_ultrametric(tree):
@@ -29,6 +29,8 @@ def is_ultrametric(tree):
     Check if tree is ultrametric (all leaf nodes equidistant from root).
     toytree doesn't have native is_ultrametric, so we implement it.
     """
+    root = [node for node in tree.traverse() if node.is_root()][0]
+
     def get_leaf_distances(node, dist=0.0):
         if node.is_leaf():
             return [dist]
@@ -38,7 +40,7 @@ def is_ultrametric(tree):
             distances.extend(get_leaf_distances(child, child_dist))
         return distances
 
-    distances = get_leaf_distances(tree.treenode)
+    distances = get_leaf_distances(root)
     if len(distances) <= 1:
         return True
     return np.allclose(distances, distances[0])
@@ -50,7 +52,7 @@ print("Non-ultrametric test tree is ultrametric:", is_ultrametric(notU))
 # Print tree info
 print("\nTest tree structure:")
 print(trs)
-print("Test tree leaf count:", trs.ntips)
+print("Test tree leaf count:", len(trs.get_tip_labels()))
 
 
 #================================
@@ -120,7 +122,7 @@ def traverse_tree_postorder(tree):
 def traverse_tree_levelorder(tree):
     """Traverse all nodes in tree (levelorder)."""
     count = 0
-    for node in tree.traverse(strategy="levelorder"):
+    for node in tree.traverse("levelorder"):
         count += 1
     return count
 

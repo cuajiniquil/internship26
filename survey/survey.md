@@ -19,7 +19,11 @@ Measures how long it takes to traverse n trees of size m
     end benchmark
     
     benchmark(isUltrametric(ultrametricTree(m)),n)
-
+    bonus:
+    benchmark(preorder(ultrametricTree(m)),n)    
+    benchmark(postorder(ultrametricTree(m)),n)
+    benchmark(levelorder(ultrametricTree(m)),n)
+    
 #### 2.2. ape
 
 The first result is a "warmup" that skews the average. 
@@ -51,11 +55,53 @@ A visualizer based on ape, therefore recycles its methods (no need to benchmark 
 
 #### 2.4. dendropy
 
+Generating initial test trees...
+Ultrametric test tree is ultrametric: True
+Non-ultrametric test tree is ultrametric: False
+
+Test tree root: <Node object at 0x786d7393e720: 'None' (None)>
+Test tree number of leaves: 1000
+
+Starting benchmarks...
+Benchmark completed in 17.06 seconds
+
+=== dendropy Benchmark Statistics ===
+
+preorder:
+  Mean time (µs): 4465.6845
+  Median time (µs): 4450.2000
+  Std dev (µs): 296.3414
+  Min time (µs): 4033.3840
+  Max time (µs): 6660.0240
+
+postorder:
+  Mean time (µs): 3835.9992
+  Median time (µs): 3824.1830
+  Std dev (µs): 93.3559
+  Min time (µs): 3725.0170
+  Max time (µs): 5760.2990
+
+levelorder:
+  Mean time (µs): 3789.8141
+  Median time (µs): 3777.7300
+  Std dev (µs): 71.3077
+  Min time (µs): 3686.2640
+  Max time (µs): 4459.5830
+
+is_ultrametric:
+  Mean time (µs): 4953.9725
+  Median time (µs): 4943.2780
+  Std dev (µs): 63.0396
+  Min time (µs): 4823.2640
+  Max time (µs): 5363.0050
+
+Plot saved to 'dendropy_traverse.png'
+
 #### 2.5. cogent3
 
 Generating initial test trees with cogent3...
 Ultrametric test tree is ultrametric: True
-Non-ultrametric test tree is ultrametric: True
+Non-ultrametric test tree is ultrametric: False
 
 Test tree structure:
 ((A:1.0,B:1.0):1.0,(C:1.0,D:1.0):1.0);
@@ -64,48 +110,45 @@ Test tree tip names: ['A', 'B', 'C', 'D']
 
 Generating large ultrametric tree for benchmark...
 Starting benchmarks...
-Benchmark completed in 1.01 seconds
+Benchmark completed in 0.98 seconds
 
 === cogent3 Benchmark Statistics ===
 
 preorder:
-  Mean time (µs): 156.6650
-  Median time (µs): 155.2700
-  Std dev (µs): 5.1808
-  Min time (µs): 151.2630
-  Max time (µs): 225.8520
+  Mean time (µs): 148.4441
+  Median time (µs): 147.9575
+  Std dev (µs): 2.2507
+  Min time (µs): 145.0720
+  Max time (µs): 169.5870
 
 postorder:
-  Mean time (µs): 417.4327
-  Median time (µs): 415.3070
-  Std dev (µs): 8.5776
-  Min time (µs): 407.8930
-  Max time (µs): 593.0200
+  Mean time (µs): 404.0007
+  Median time (µs): 403.6060
+  Std dev (µs): 3.2119
+  Min time (µs): 398.0350
+  Max time (µs): 425.3370
 
 levelorder:
-  Mean time (µs): 165.7403
-  Median time (µs): 164.3870
-  Std dev (µs): 3.3601
-  Min time (µs): 162.3540
-  Max time (µs): 184.5750
+  Mean time (µs): 160.7974
+  Median time (µs): 160.0200
+  Std dev (µs): 2.1355
+  Min time (µs): 158.2660
+  Max time (µs): 189.1750
 
 is_ultrametric:
-  Mean time (µs): 272.8828
-  Median time (µs): 269.8000
-  Std dev (µs): 10.8101
-  Min time (µs): 262.4910
-  Max time (µs): 419.0740
+  Mean time (µs): 260.5246
+  Median time (µs): 259.1950
+  Std dev (µs): 4.8786
+  Min time (µs): 252.7330
+  Max time (µs): 307.4160
 
 Plot saved to 'cogent3_traverse.png'
 
-
 #### 2.6. biopython
-
->Terminal output:
 
 Generating initial test trees with biopython...
 Ultrametric test tree is ultrametric: True
-Non-ultrametric test tree is ultrametric: True
+Non-ultrametric test tree is ultrametric: False
 
 Test tree structure:
                                         _____________________________________ A
@@ -120,95 +163,90 @@ Test tree leaf count: 4
 
 Generating large ultrametric tree for benchmark...
 Starting benchmarks...
-Benchmark completed in 94.18 seconds
+Benchmark completed in 67.51 seconds
 
 === biopython Benchmark Statistics ===
 
 preorder:
-  Mean time (µs): 30317.9912
-  Median time (µs): 30182.3950
-  Std dev (µs): 1604.8641
-  Min time (µs): 28933.1090
-  Max time (µs): 51965.5300
+  Mean time (µs): 28054.4702
+  Median time (µs): 28041.5680
+  Std dev (µs): 1249.2541
+  Min time (µs): 26635.7930
+  Max time (µs): 41059.8290
 
 postorder:
-  Mean time (µs): 31152.5805
-  Median time (µs): 31124.3390
-  Std dev (µs): 1904.8460
-  Min time (µs): 29246.3460
-  Max time (µs): 55589.4210
+  Mean time (µs): 28477.1477
+  Median time (µs): 28391.1860
+  Std dev (µs): 1083.6928
+  Min time (µs): 28063.8840
+  Max time (µs): 41767.1810
 
 levelorder:
-  Mean time (µs): 28840.6855
-  Median time (µs): 28883.4305
-  Std dev (µs): 1677.7494
-  Min time (µs): 24819.7810
-  Max time (µs): 53835.1430
+  Mean time (µs): 7359.9267
+  Median time (µs): 7353.7135
+  Std dev (µs): 42.9094
+  Min time (µs): 7269.4550
+  Max time (µs): 7551.5240
 
 is_ultrametric:
-  Mean time (µs): 3749.9837
-  Median time (µs): 3730.8465
-  Std dev (µs): 92.3718
-  Min time (µs): 3648.7880
-  Max time (µs): 4572.5280
+  Mean time (µs): 3525.9377
+  Median time (µs): 3520.1175
+  Std dev (µs): 36.3710
+  Min time (µs): 3458.8080
+  Max time (µs): 3696.2130
 
 Plot saved to 'biopython_traverse.png'
 
-
 #### 2.7. ete3
-
->Terminal output
-
-**ISSUE: RETURNS TRUE FOR BOTH IS.ULTRAMETRIC; fix later**
 
 Generating initial test trees with ete3...
 Ultrametric test tree is ultrametric: True
-Non-ultrametric test tree is ultrametric: True
+Non-ultrametric test tree is ultrametric: False
 
 Test tree structure:
 
       /-A
    /-|
-  |   "\"-B
+  |   '\'-B
 --|
   |   /-C
-   "\"-|
-      "\""-D
+   '\'-|
+      '\'-D
 Test tree leaf count: 4
 
 Generating large ultrametric tree for benchmark...
 Starting benchmarks...
-Benchmark completed in 85.71 seconds
+Benchmark completed in 82.25 seconds
 
 === ete3 Benchmark Statistics ===
 
 preorder:
-  Mean time (µs): 2165.6035
-  Median time (µs): 2178.7040
-  Std dev (µs): 47.4163
-  Min time (µs): 2045.3240
-  Max time (µs): 2490.1380
+  Mean time (µs): 2196.3424
+  Median time (µs): 2169.5270
+  Std dev (µs): 120.5144
+  Min time (µs): 2074.4540
+  Max time (µs): 3266.6260
 
 postorder:
-  Mean time (µs): 7949.7280
-  Median time (µs): 7921.4980
-  Std dev (µs): 106.0309
-  Min time (µs): 7696.7870
-  Max time (µs): 9315.1710
+  Mean time (µs): 7921.4069
+  Median time (µs): 7769.9080
+  Std dev (µs): 357.4379
+  Min time (µs): 7502.4470
+  Max time (µs): 11253.3690
 
 levelorder:
-  Mean time (µs): 2043.6679
-  Median time (µs): 2037.7290
-  Std dev (µs): 53.9969
-  Min time (µs): 1980.8630
-  Max time (µs): 2894.1540
+  Mean time (µs): 1997.7605
+  Median time (µs): 1976.1700
+  Std dev (µs): 93.9674
+  Min time (µs): 1897.3430
+  Max time (µs): 3032.6280
 
 is_ultrametric:
-  Mean time (µs): 73466.2594
-  Median time (µs): 72549.1290
-  Std dev (µs): 2082.2927
-  Min time (µs): 70841.1350
-  Max time (µs): 79277.1680
+  Mean time (µs): 70055.5502
+  Median time (µs): 70035.7010
+  Std dev (µs): 789.6765
+  Min time (µs): 68188.6480
+  Max time (µs): 77554.9050
 
 Plot saved to 'ete3_traverse.png'
 
@@ -216,48 +254,90 @@ Plot saved to 'ete3_traverse.png'
 
 Generating initial test trees with toytree...
 Ultrametric test tree is ultrametric: True
-Non-ultrametric test tree is ultrametric: True
+Non-ultrametric test tree is ultrametric: False
 
 Test tree structure:
-<toytree.ToyTree at 0x7be0f1a49190>
+<toytree.ToyTree at 0x71cf36b6faa0>
 Test tree leaf count: 4
 
 Generating large ultrametric tree for benchmark...
 Starting benchmarks...
-Benchmark completed in 9.48 seconds
+Benchmark completed in 11.50 seconds
 
 === toytree Benchmark Statistics ===
 
 preorder:
-  Mean time (µs): 2109.4448
-  Median time (µs): 2107.3090
-  Std dev (µs): 19.0287
-  Min time (µs): 2049.1200
-  Max time (µs): 2221.6430
+  Mean time (µs): 2086.0348
+  Median time (µs): 2083.2180
+  Std dev (µs): 27.1078
+  Min time (µs): 2036.3880
+  Max time (µs): 2620.2790
 
 postorder:
-  Mean time (µs): 1891.2966
-  Median time (µs): 1892.2310
-  Std dev (µs): 15.2445
-  Min time (µs): 1840.6790
-  Max time (µs): 1975.8530
+  Mean time (µs): 1857.8428
+  Median time (µs): 1857.0380
+  Std dev (µs): 19.1475
+  Min time (µs): 1811.0340
+  Max time (µs): 1948.3860
 
 levelorder:
-  Mean time (µs): 1849.0401
-  Median time (µs): 1847.5975
-  Std dev (µs): 17.0936
-  Min time (µs): 1798.4110
-  Max time (µs): 1978.1570
+  Mean time (µs): 1790.2446
+  Median time (µs): 1786.3290
+  Std dev (µs): 19.0562
+  Min time (µs): 1755.3910
+  Max time (µs): 1886.1220
 
 is_ultrametric:
-  Mean time (µs): 3614.3272
-  Median time (µs): 3605.8925
-  Std dev (µs): 71.7640
-  Min time (µs): 3541.3570
-  Max time (µs): 5260.7080
+  Mean time (µs): 5755.9146
+  Median time (µs): 5754.3930
+  Std dev (µs): 46.4490
+  Min time (µs): 5624.8860
+  Max time (µs): 6012.2280
 
 Plot saved to 'toytree_traverse.png'
 
+#### 2.9 Phylo.jl
 
+Generating initial test trees with Phylo.jl...
+Ultrametric test tree is ultrametric: true
+Non-ultrametric test tree is ultrametric: false
+
+Test tree leaf count: 4
+
+Generating large ultrametric tree for benchmark...
+Starting benchmarks...
+Benchmark completed in 7.99 seconds
+
+=== Phylo.jl Benchmark Statistics ===
+
+preorder:
+  Mean time (µs): 266.1369
+  Median time (µs): 48.19
+  Std dev (µs): 4988.5093
+  Min time (µs): 43.732
+  Max time (µs): 154932.34
+
+postorder:
+  Mean time (µs): 2891.3937
+  Median time (µs): 2605.087
+  Std dev (µs): 915.1422
+  Min time (µs): 2397.22
+  Max time (µs): 13842.358
+
+levelorder:
+  Mean time (µs): 1429.3421
+  Median time (µs): 1121.1755
+  Std dev (µs): 5151.6154
+  Min time (µs): 1080.685
+  Max time (µs): 161629.768
+
+is_ultrametric:
+  Mean time (µs): 3216.5896
+  Median time (µs): 2892.338
+  Std dev (µs): 1034.2751
+  Min time (µs): 2727.295
+  Max time (µs): 11723.618
+
+Plot saved to 'phylo\_jl\_traverse.png'
 
 ### (3. phyl2vec?)

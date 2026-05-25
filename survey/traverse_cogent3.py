@@ -23,7 +23,7 @@ ultra_newick = "((A:1,B:1):1,(C:1,D:1):1);"
 trs = make_tree(ultra_newick)
 
 # Create a non-ultrametric tree for comparison
-non_ultra_newick = "((A:5,B:5):2,C:7);"
+non_ultra_newick = "(A:1,B:5);"
 notU = make_tree(non_ultra_newick)
 
 def is_ultrametric(tree):

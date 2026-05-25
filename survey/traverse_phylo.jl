@@ -9,9 +9,9 @@ using StatsBase
 using PyPlot
 import Random
 
-#================================
-#1: initial tests
-#================================
+# ================================
+# 1: initial tests
+# ================================
 
 println("Generating initial test trees with Phylo.jl...")
 
@@ -20,30 +20,27 @@ ultra_newick = "((A:1,B:1):1,(C:1,D:1):1);"
 trs = parsenewick(ultra_newick)
 
 # Create a non-ultrametric tree for comparison
-non_ultra_newick = "((A:5,B:5):2,C:7);"
+non_ultra_newick = "(A:1,B:5);"
 notU = parsenewick(non_ultra_newick)
 
 function is_ultrametric(tree::AbstractTree)::Bool
-    """
-    Check if all leaf nodes are equidistant from root.
-    """
     function get_leaf_distances(node, dist=0.0)
         if isleaf(tree, node)
             return [dist]
         end
         distances = Float64[]
         for child in getchildren(tree, node)
-            child_dist = dist + getdistance(tree, node, child)
+            branch = getinbound(tree, child)          # branche entrante de l'enfant
+            child_dist = dist + getlength(tree, branch)  # longueur de cette branche
             append!(distances, get_leaf_distances(child, child_dist))
         end
         return distances
     end
 
-    distances = get_leaf_distances(getnodes(tree)[1])
+    distances = get_leaf_distances(getroot(tree))
     if length(distances) <= 1
         return true
     end
-    # Check if all distances are approximately equal
     return maximum(distances) - minimum(distances) < 1e-10
 end
 
@@ -55,9 +52,9 @@ println("Non-ultrametric test tree is ultrametric: $(is_ultrametric(notU))")
 println("\nTest tree leaf count: $(nleaves(trs))")
 
 
-#================================
-#2: tree traversing benchmarks
-#================================
+# ================================
+# 2: tree traversing benchmarks
+# ================================
 
 function benchmark_sys(fn::Function, times::Int)::Vector{Float64}
     """
@@ -144,9 +141,9 @@ benchmark_time_s = (send - sstart) / 1e9
 println("Benchmark completed in $(round(benchmark_time_s, digits=2)) seconds")
 
 
-#================================
+# ================================
 # 3: plotting and statistics
-#================================
+# ================================
 
 println("\n=== Phylo.jl Benchmark Statistics ===")
 for (method_name, method_times) in [
@@ -164,14 +161,15 @@ for (method_name, method_times) in [
 end
 
 # Create violin plot comparing all methods
-figure(figsize=(10, 6))
+fig, ax = subplots(figsize=(10, 6))
 data_by_method = [sres_preorder, sres_postorder, sres_levelorder, sres_ultrametric]
 positions = [1, 2, 3, 4]
-violinplot(data_by_method, positions=positions, widths=0.7)
-ylabel("Time (microseconds)")
-title("Phylo.jl Tree Traversal Methods Comparison")
-xticks(positions, ["preorder", "postorder", "levelorder", "is_ultrametric"])
-grid(true, axis="y", alpha=0.3)
+ax.violinplot(data_by_method, positions=positions, widths=0.7)
+ax.set_ylabel("Time (microseconds)")
+ax.set_title("Phylo.jl Tree Traversal Methods Comparison")
+ax.set_xticks(positions)
+ax.set_xticklabels(["preorder", "postorder", "levelorder", "is_ultrametric"])
+ax.grid(true, axis="y", alpha=0.3)
 
 tight_layout()
 savefig("phylo_jl_traverse.png", dpi=100)

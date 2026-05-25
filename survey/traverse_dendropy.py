@@ -41,11 +41,11 @@ def is_ultrametric(tree):
     distances = get_leaf_distances(tree.seed_node)
     if len(distances) <= 1:
         return True
-    return len(set(distances)) == 1
+    return np.allclose(distances, distances[0])
 
 
 # Create a non-ultrametric tree for comparison
-non_ultra_str = "((A:5,B:5):2,C:7);"
+non_ultra_str = "(A:1,B:5);"
 non_ultra = dendropy.Tree.get(data=non_ultra_str, schema="newick")
 
 print("Ultrametric test tree is ultrametric:", is_ultrametric(trs))

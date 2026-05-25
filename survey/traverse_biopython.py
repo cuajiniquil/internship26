@@ -24,7 +24,7 @@ handle = StringIO(ultra_newick)
 trs = Phylo.read(handle, "newick")
 
 # Create a non-ultrametric tree for comparison
-non_ultra_newick = "((A:5,B:5):2,C:7);"
+non_ultra_newick = "(A:1,B:5);"
 handle = StringIO(non_ultra_newick)
 notU = Phylo.read(handle, "newick")
 
@@ -127,9 +127,13 @@ def traverse_tree_postorder(tree):
 def traverse_tree_levelorder(tree):
     """Traverse all nodes in tree (level order)."""
     count = 0
-    for clade in tree.find_clades(order="level"):
+    stack = [tree.root]
+    while stack:
+        clade = stack.pop(0)
         count += 1
+        stack.extend(clade.clades)
     return count
+
 
 # Create test tree
 np.random.seed(273)

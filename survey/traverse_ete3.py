@@ -21,16 +21,17 @@ ultra_newick = "((A:1,B:1):1,(C:1,D:1):1);"
 trs = Tree(ultra_newick)
 
 # Create a non-ultrametric tree for comparison
-non_ultra_newick = "((A:5,B:5):2,C:7);"
+non_ultra_newick = "(A:1,B:5);"
 notU = Tree(non_ultra_newick)
 
 def is_ultrametric(tree):
     """
     Check if all leaf nodes are equidistant from root.
-    ete3 has no native is_ultrametric(); we compute root-to-leaf distances
-    and verify they are all equal (within floating-point tolerance).
     """
-    distances = [tree.get_distance(leaf) for leaf in tree.iter_leaves()]
+    distances = []
+    for leaf in tree.get_leaves():
+        dist = tree.get_distance(leaf)
+        distances.append(dist)
     if len(distances) <= 1:
         return True
     return np.allclose(distances, distances[0])

@@ -112,8 +112,11 @@ def traverse_tree_levelorder(tree):
 
 
 # Create test tree
-np.random.seed(273)
-test_tree = create_ultrametric_tree(10000)
+print("\nExtracting trees from nwk files...")
+# Trees generated in R:
+ultra1k = open("ultra1k.nwk").readlines()
+parsedu1k = dendropy.Tree.get(data=ultra1k[0], schema="newick")
+test_tree = parsedu1k
 
 print("\nStarting benchmarks...")
 sstart = time.perf_counter()

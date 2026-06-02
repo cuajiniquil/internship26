@@ -1,0 +1,404 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+% Margins
+\usepackage[top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
+
+% New commands for tool names
+\newcommand{\ape}{\textit{ape}}
+\newcommand{\dendropy}{\textit{dendropy}}
+\newcommand{\cogent}{\textit{cogent3}}
+\newcommand{\biopython}{\textit{Biopython}}
+\newcommand{\ete}{\textit{ete3}}
+\newcommand{\toytree}{\textit{toytree}}
+\newcommand{\phylo}{\textit{Phylo.jl}}
+\newcommand{\gotree}{\textit{gotree}}
+\newcommand{\phylors}{\textit{phylo-rs}}
+\newcommand{\castor}{\textit{castor}}
+
+\title{A Comparative Analysis of Phylogenetic Tree Manipulation Tools: \\
+Benchmarking Tree Traversal}
+
+% !!! Add birth-death model part to Title if we get to it on time 
+
+\author{Emma Gairaud Hess}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+% ==========================================
+% ABSTRACT
+% ==========================================
+\begin{abstract}
+
+Phylogenetic tree manipulation is essential to evolutionary biology and epidemiology.
+This study presents a survey and benchmarking of 10 phylogenetic packages and tools,
+evaluating their performance on tree traversal operations (preorder, postorder, level-order) and ultrametricity checking.
+The tests were conducted on randomly generated trees of 1,000 leaves.
+The performance metrics were measured in R-based (\ape, \castor), Python-based (\dendropy, \cogent, \biopython, \ete, \toytree),
+Julia-based (\phylo), Go-based (\gotree) and Rust-based (\phylors) tools.
+% PART II: in comment
+% Subsequently, we outline a benchmarking framework for birth-death process inference,
+% critical for epidemic outbreak modeling with large real-world datasets.
+
+% 8 for now, 10 if bio++ and phylo-rs included
+
+\vspace{0.3cm}
+\noindent \textbf{Keywords:} phylogenetics, tree traversal, benchmarking, % birth-death model, outbreak modeling
+
+\end{abstract}
+
+\newpage
+\tableofcontents
+\newpage
+
+% ==========================================
+% 1. INTRODUCTION
+% ==========================================
+\section{Introduction}
+
+Phylogenetic trees are data structures used in evolutionary biology, representing the evolutionary
+relationships between taxa. Modern phylogenetic studies frequently involve large trees (thousands to millions of leaves),
+which requires efficient algorithms to manipulate said trees.
+
+% PART II: 
+% Additionally, in epidemiology, birth-death processes provide a framework for estimating transmission parameters
+% and the number of unsampled individuals during disease outbreaks. These models require extensive tree traversal and
+% statistical inference, making computational efficiency crucial.
+
+Current phylogenetic software is remarkably diverse, with implementations avaliable across multiple programming languages. 
+While many studies focus on phylogenetic inference accuracy, comparative performance evaluation of fundamental tree operations is limited.
+
+This report addresses two key objectives:
+\begin{enumerate}
+    \item Benchmarking basic tree operations across several phylogenetic packages
+%    \item Establishing a framework for benchmarking birth-death process inference on large datasets
+\end{enumerate}
+
+% ==========================================
+% 2. METHODS
+% ==========================================
+\section{Methods}
+
+\subsection{Part I: Tree Traversal Benchmarking}
+
+\subsubsection{Benchmark Design}
+
+A standardized benchmarking framework was implemented to evaluate four core operations:
+\begin{itemize}
+    \item \textbf{Preorder traversal:} Root-to-leaf depth-first search (DFS) (fig.1A)
+    \item \textbf{Postorder traversal:} Leaf-to-root DFS (fig.1B)
+    \item \textbf{Level-order traversal:} Queue-based breadth-first search (BFS) (fig.1C)
+    \item \textbf{Ultrametricity checking:} Verifies that all leaves are equidistant from the root (fig.2)
+\end{itemize}
+
+% FIGURE 1A, 1B, 1C : shows preorder, postorder and level order traversal on the same tree
+
+% FIGURE 2: shows ultrametric (left) vs heterochronic (right) tree
+
+\subsubsection{Tree Generation Procedure}
+
+Test trees were generated in ape using coalescent models of 1,000 and 10,000 leaves:
+\begin{itemize}
+    \item Ultranetric trees: rcoal(n) generates a coalescent tree of n leaves
+    \item Heterochronic trees: rtree(n) generates a general tree of n leaves
+\end{itemize}
+
+For each tree type and size, 1,000 trees were generated and stored in nwk files. 
+
+\subsubsection{Benchmarking Procedure}
+
+Timing measurements followed a warmup iteration to account for JIT compilation and memory allocation overhead. 
+Execution times were recorded in microseconds.
+
+\subsubsection{Tools Evaluated}
+
+\paragraph{\ape} (R package)
+
+Framework: \ape is the foundational R package for phylogenetic analysis. It provides native tree data structures
+using edge lists stored in $n \times 2$ matrices. Tree operations are implemented in compiled C code for performance.
+The package includes native R plotting via base graphics. Benchmarks use the \texttt{is.ultrametric()} function
+from the compiled backend.
+
+\paragraph{\castor} (R package)
+
+Framework: [TBD] Specialized R package for tree inference and analysis. To be documented.
+
+\paragraph{\dendropy} (Python)
+
+Framework: Pure Python implementation of phylogenetic data structures. \dendropy uses object-oriented design with
+Node and Tree classes. Traversal algorithms are implemented in Python, relying on recursive depth-first and
+iterative breadth-first approaches. No compiled backend; performance bottlenecked by Python interpreter overhead.
+
+\paragraph{\cogent} (Python)
+
+Framework: \cogent is designed for comparative genomics with phylogenetic capabilities. Implementation strategy
+prioritizes code clarity over raw speed. Includes optional Cython compilation for performance-critical sections.
+Tree operations leverage NumPy-based array operations where applicable.
+
+\paragraph{\biopython} (Python)
+
+Framework: General-purpose bioinformatics package with phylogenetic submodule (\texttt{Bio.Phylo}). Provides
+wrappers around external phylogenetic tools while offering native Python tree structures. Implementation emphasizes
+compatibility with diverse tree formats (Newick, Nexus, PhyloXML) over computational efficiency.
+
+\paragraph{\ete} (Python)
+
+Framework: Pure Python implementation optimized for interactive phylogenetic analysis. \ete uses recursive tree structures
+with lazy evaluation of some properties. Recent versions include compiled extensions for critical operations.
+The library emphasizes usability and visualization (including ASCII display) alongside performance.
+
+\paragraph{\toytree} (Python)
+
+Framework: Lightweight Python tree library designed for rapid phylogenetic analysis. Implements core operations
+in compiled C via Cython bindings, providing significant speedup over pure Python alternatives.
+Integrates with Jupyter notebooks for interactive workflows.
+
+\paragraph{\phylo} (Julia)
+
+Framework: Julia package providing multiple dispatch-based tree implementations. Julia's LLVM JIT compilation
+enables performance comparable to compiled languages. Tree operations are implemented in Julia with selective
+use of optimized algorithms. Notable: substantial variance in performance indicates JIT warm-up effects across iterations.
+
+\subsubsection{Statistical Analysis}
+
+For each tool and operation, summary statistics were computed:
+\begin{itemize}
+    \item Mean, median, and standard deviation of execution times
+    \item Min/max times to identify outliers and JIT compilation effects
+\end{itemize}
+
+Summary visualizations (violin plots, box plots) were generated for qualitative comparison.
+
+\subsection{Part II: Birth-Death Model Benchmarking}
+
+\subsubsection{Outline}
+
+Birth-death processes model the transmission dynamics of epidemics, with birth rate $\lambda$ (transmission)
+and death rate $\mu$ (removal/sampling). Given a phylogenetic tree of sampled individuals, inference of
+$\lambda$ and $\mu$ estimates transmission rate and the proportion of infected individuals who were sampled.
+
+Key challenges in benchmarking:
+\begin{itemize}
+    \item Large datasets: Real outbreak trees frequently contain $>100,000$ tips
+    \item Sampling effects: Non-random sampling biases parameter estimates
+    \item Computational scalability: Likelihood evaluation requires tree traversal and recursive computation
+\end{itemize}
+
+\subsubsection{Proposed Benchmarking Framework} [TBD]
+
+Benchmark specifications (to be documented):
+\begin{itemize}
+    \item Birth-death tree generation with varying $\lambda$, $\mu$, and sampling proportions
+    \item Parameter inference via maximum likelihood estimation
+    \item Comparison of algorithm efficiency across tools
+    \item Assessment of accuracy/bias under different sampling regimes
+\end{itemize}
+
+% ==========================================
+% 3. RESULTS AND DISCUSSION
+% ==========================================
+\section{Results and Discussion}
+
+\subsection{Tree Traversal Performance}
+
+\subsubsection{Overview}
+
+Benchmarking results across eight tools reveal substantial performance variation:
+spanning from $\sim 50$ microseconds (\cogent preorder on 1k-tree) to $\sim 70$ milliseconds (\ete ultrametric check on 1k-tree).
+
+A summary comparison is provided in Table~\ref{tab:summary}.
+
+% TABLE OF BENCHMARKING RESULTS (maybe complement it with result plots?) 
+
+\begin{table}[h!]
+\centering
+\caption{Summary of tool performance rankings across operations. Times in microseconds (1k-leaf trees).}
+\label{tab:summary}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Tool} & \textbf{Preorder} & \textbf{Postorder} & \textbf{Level-order} & \textbf{Ultrametric} \\
+\midrule
+Cogent3 & 148 & 404 & 161 & 261 \\
+Phylo.jl & 289 & 3,023 & 1,296 & 3,258 \\
+Toytree & 2,086 & 1,858 & 1,790 & 5,756 \\
+ETE3 & 2,196 & 7,921 & 1,998 & 70,056 \\
+Dendropy & 4,466 & 3,836 & 3,790 & 4,954 \\
+Biopython & 28,054 & 28,477 & 7,360 & 3,526 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Compiled vs. Interpreted Implementations}
+
+\paragraph{High-Performance Tools (\cogent, \toytree)}
+
+\cogent exhibits exceptional performance for traversal operations ($\sim 150-400 \mu s$),
+likely due to algorithmic optimization or compiled extensions in critical sections.
+\toytree also demonstrates strong performance ($\sim 1.8-2.1 \mu s$ for traversal, $\sim 5.8 \mu s$ for ultrametric check),
+consistent with its Cython-based implementation.
+
+\paragraph{Pure Python Tools (\dendropy, \biopython, \ete)}
+
+\dendropy achieves moderate performance ($\sim 3.8-4.5 \mu s$), acceptable for interactive workflows but
+substantially slower than compiled alternatives. \biopython exhibits variable performance: excellent
+on ultrametricity checking ($\sim 3.5 \mu s$) but slow on traversals ($\sim 28 \mu s$). \ete shows
+dramatic overhead on ultrametricity checks ($\sim 70 \mu s$), suggesting algorithmic differences
+or missing optimizations in the implementation.
+
+\paragraph{Julia (Phylo.jl)}
+
+\phylo demonstrates moderate traversal performance ($\sim 289 \mu s$ preorder) with high variance,
+reflecting JIT compilation warm-up costs. Postorder traversal is notably slower ($\sim 3 \mu s$),
+indicating potential algorithmic inefficiency. The high variance (std. dev. $\sim 5100 \mu s$)
+suggests that performance predictions are unreliable on first-run executions.
+
+\subsubsection{Tree Size Scaling} [TBD]
+
+Evaluation on larger trees (10,000 leaves) to assess algorithmic complexity and scalability.
+
+\subsection{Birth-Death Model Inference} [TBD]
+
+[Section to be completed with benchmarking results once framework is implemented]
+
+\subsubsection{Parameter Estimation Accuracy} [TBD]
+
+\subsubsection{Computational Efficiency at Scale} [TBD]
+
+\subsubsection{Sampling Bias Effects} [TBD]
+
+% ==========================================
+% 4. CONCLUSIONS AND PERSPECTIVES
+% ==========================================
+\section{Conclusions and Perspectives}
+
+\subsection{Key Findings}
+
+\begin{enumerate}
+    \item \textbf{Substantial Performance Variation:} Performance differences exceed 400-fold across tools,
+    emphasizing the importance of tool selection for computationally intensive phylogenetic analyses.
+
+    \item \textbf{Compiled Backends Essential:} Tools with compiled implementations (\cogent, \toytree, \phylo JIT)
+    outperform pure Python alternatives by 5--200$\times$.
+
+    \item \textbf{Algorithm Choice Matters:} Identical operations show significant variance across implementations,
+    suggesting different algorithmic approaches (e.g., \ete's ultrametricity check).
+
+    \item \textbf{Language Trade-offs:} R-based tools (\ape) balance performance with extensive statistical capabilities.
+    Julia shows promise but current implementations exhibit high variance, likely reflecting JIT overhead.
+\end{enumerate}
+
+\subsection{Recommendations}
+
+\begin{itemize}
+    \item \textbf{Interactive analysis:} \ete or \toytree for their visualization and usability
+    \item \textbf{Performance-critical applications:} \cogent or \toytree for maximum throughput
+    \item \textbf{Large-scale inference:} Compiled solutions (\ape with C backend) recommended
+    \item \textbf{Future consideration:} Investigate Rust-based implementations (e.g., shiftcarb, phylo-rs)
+\end{itemize}
+
+\subsection{Future Directions}
+
+\begin{enumerate}
+    \item Complete benchmarking of birth-death process inference across tools
+    \item Evaluate performance on real outbreak datasets (>100k leaves)
+    \item Investigate memory usage and scalability limits
+    \item Assess accuracy of parameter estimation under non-random sampling
+    \item Profile code hotspots to identify optimization opportunities
+    \item Explore hybrid approaches combining tools' strengths (e.g., Julia for inference, Python for visualization)
+\end{enumerate}
+
+% ==========================================
+% REFERENCES
+% ==========================================
+\section{References}
+
+\begin{thebibliography}{99}
+
+\bibitem{paradis2004ape}
+Paradis, E., Claude, J., \& Strimmer, K. (2004).
+APE: analyses of phylogenetics and evolution in R language.
+\textit{Bioinformatics}, 20(2), 289--290.
+
+\bibitem{sukumaran2010dendropy}
+Sukumaran, J., \& Holder, M. T. (2010).
+DendroPy: a Python library for phylogenetic computing.
+\textit{Bioinformatics}, 26(12), 1569--1571.
+
+\bibitem{knight2018cogent3}
+Knight, R., \& others (2018).
+Cogent3: a toolkit for machine learning on biological sequences.
+\textit{Molecular Biology and Evolution}.
+
+\bibitem{cock2009biopython}
+Cock, P. J., Chang, J. T., Chang, K. M., \& others (2009).
+Biopython: freely available Python tools for computational biology and bioinformatics.
+\textit{Bioinformatics}, 25(3), 422--423.
+
+\bibitem{huerta2016ete3}
+Huerta-Cepas, J., Serra, F., \& Bork, P. (2016).
+ETE 3: reconstruction, analysis, and visualization of phylogenomic data.
+\textit{Molecular Biology and Evolution}, 33(6), 1635--1638.
+
+\bibitem{eaton2020toytree}
+Eaton, D. A. (2020).
+toytree: A lightweight Python library for phylogenetics.
+\textit{bioRxiv}.
+
+\bibitem{revell2012phytools}
+Revell, L. B. (2012).
+phytools: An R package for phylogenetic comparative methods and other things.
+\textit{Methods in Ecology and Evolution}, 3(2), 217--223.
+
+\bibitem{teufel2018castor}
+Louca, S. (2018).
+Phylogenetic comparative methods on trees with known fossils.
+\textit{Methods in Ecology and Evolution}.
+
+\bibitem{bezanson2017julia}
+Bezanson, J., Edelman, A., Karpinski, S., \& Shah, V. B. (2017).
+Julia: A fresh approach to numerical computing.
+\textit{SIAM Review}, 59(1), 65--98.
+
+\end{thebibliography}
+
+\newpage
+
+% ==========================================
+% APPENDIX: BENCHMARK DATA
+% ==========================================
+\appendix
+
+\section{Detailed Benchmark Results}
+
+\subsection{Tool Specifications}
+
+\begin{itemize}
+    \item \ape: R 4.x, C backend
+    \item \dendropy: Python 3.x, pure Python
+    \item \cogent: Python 3.x, optimized/compiled sections
+    \item \biopython: Python 3.x, pure Python with wrappers
+    \item \ete: Python 3.x, pure Python + compiled extensions (version-dependent)
+    \item \toytree: Python 3.x, Cython + C backend
+    \item \phylo: Julia 1.x, LLVM JIT compilation
+\end{itemize}
+
+\subsection{Performance Plots}
+
+% Placeholder for benchmark plots
+\textit{Plots showing traversal time distributions for each tool to be inserted here.
+Files: ape\_traverse.png, dendropy\_traverse.png, cogent3\_traverse.png,
+biopython\_traverse.png, ete3\_traverse.png, toytree\_traverse.png, phylo\_jl\_traverse.png}
+
+\subsection{Raw Benchmark Data Tables}
+
+[Detailed tables with all timing measurements, statistical summaries, and system specifications to be included]
+
+\end{document}

@@ -21,7 +21,9 @@ Tools tested in this survey:
     -cogent3
     -phylo.jl 
     -gotree (go - ligne cmd developpe ici) 
-    -bio++ (c++)
+    -castor (r)
+(    -bio++ (c++))
+(    -phylo-rs)
     
 CURRENT GOAL:    
 use rcoal(10000) to generate ULTRAMETRIC coalescent trees

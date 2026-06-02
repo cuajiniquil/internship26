@@ -8,6 +8,7 @@ library("ggplot2")
 #================================
 
 trs <- rcoal(1000)
+
 notU <- read.tree(text = "(((Pan:5,Homo:5):2, Chimp:6, Gorilla:7):4,Worm:10);")
 
 # Test if trees are ultrametric using ape functions

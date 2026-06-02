@@ -1,0 +1,43 @@
+Generating initial test trees with toytree...
+Ultrametric test tree is ultrametric: True
+Non-ultrametric test tree is ultrametric: False
+
+Test tree structure:
+<toytree.ToyTree at 0x7ca39714cad0>
+Test tree leaf count: 4
+
+Extracting trees from nwk files...
+Starting benchmarks...
+Benchmark completed in 1.12 seconds
+
+=== toytree Benchmark Statistics ===
+
+preorder:
+  Mean time (µs): 197.1309
+  Median time (µs): 191.6415
+  Std dev (µs): 10.5705
+  Min time (µs): 182.5190
+  Max time (µs): 302.1370
+
+postorder:
+  Mean time (µs): 165.3365
+  Median time (µs): 164.5495
+  Std dev (µs): 5.0538
+  Min time (µs): 160.3660
+  Max time (µs): 253.6450
+
+levelorder:
+  Mean time (µs): 167.2905
+  Median time (µs): 166.4280
+  Std dev (µs): 4.6953
+  Min time (µs): 163.9740
+  Max time (µs): 286.6980
+
+is_ultrametric:
+  Mean time (µs): 590.0355
+  Median time (µs): 590.0080
+  Std dev (µs): 14.4010
+  Min time (µs): 566.6140
+  Max time (µs): 802.3040
+
+Plot saved to 'toytree_traverse.png'

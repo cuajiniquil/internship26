@@ -24,7 +24,7 @@ trs = Tree(ultra_newick)
 non_ultra_newick = "(A:1,B:5);"
 notU = Tree(non_ultra_newick)
 
-def is_ultrametric(tree):
+def is_ultrametric_slow(tree):
     """
     Check if all leaf nodes are equidistant from root.
     """
@@ -36,7 +36,23 @@ def is_ultrametric(tree):
         return True
     return np.allclose(distances, distances[0])
 
-
+#hgih search time fix:
+def is_ultrametric(tree):
+    ref = None
+    # stack contient (noeud, distance_accumulée_depuis_racine)
+    stack = [(tree, tree.dist)]
+    while stack:
+        node, dist = stack.pop()
+        if node.is_leaf():
+            if ref is None:
+                ref = dist
+            elif not np.isclose(dist, ref):
+                return False  # early exit possible sur arbre non-ultrametrique
+        else:
+            for child in node.children:
+                stack.append((child, dist + child.dist))
+    return True
+    
 print("Ultrametric test tree is ultrametric:", is_ultrametric(trs))
 print("Non-ultrametric test tree is ultrametric:", is_ultrametric(notU))
 
@@ -119,16 +135,17 @@ def traverse_tree_levelorder(tree):
 
 
 # Create test tree
-np.random.seed(273)
-print("\nGenerating large ultrametric tree for benchmark...")
-test_tree = create_balanced_ultrametric_tree(10000)
+print("\nExtracting trees from nwk files...")
+# Trees genereated in R:
+ultra1k = open("ultra1k.nwk").readlines()
+parsedu1k = Tree(ultra1k[0])
 
 print("Starting benchmarks...")
 sstart = time.perf_counter()
-sres_preorder = benchmark_sys(lambda: traverse_tree_preorder(test_tree), 1000)
-sres_postorder = benchmark_sys(lambda: traverse_tree_postorder(test_tree), 1000)
-sres_levelorder = benchmark_sys(lambda: traverse_tree_levelorder(test_tree), 1000)
-sres_ultrametric = benchmark_sys(lambda: is_ultrametric(test_tree), 1000)
+sres_preorder = benchmark_sys(lambda: traverse_tree_preorder(parsedu1k), 1000)
+sres_postorder = benchmark_sys(lambda: traverse_tree_postorder(parsedu1k), 1000)
+sres_levelorder = benchmark_sys(lambda: traverse_tree_levelorder(parsedu1k), 1000)
+sres_ultrametric = benchmark_sys(lambda: is_ultrametric(parsedu1k), 1000)
 send = time.perf_counter()
 
 print(f"Benchmark completed in {send - sstart:.2f} seconds")

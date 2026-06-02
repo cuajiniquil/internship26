@@ -1,0 +1,44 @@
+Generating initial test trees with cogent3...
+Ultrametric test tree is ultrametric: True
+Non-ultrametric test tree is ultrametric: False
+
+Test tree structure:
+((A:1.0,B:1.0):1.0,(C:1.0,D:1.0):1.0);
+
+Test tree tip names: ['A', 'B', 'C', 'D']
+
+Extracting trees from nwk files...
+Starting benchmarks...
+Benchmark completed in 0.94 seconds
+
+=== cogent3 Benchmark Statistics ===
+
+preorder:
+  Mean time (µs): 144.9498
+  Median time (µs): 144.3230
+  Std dev (µs): 2.3057
+  Min time (µs): 139.0240
+  Max time (µs): 178.5740
+
+postorder:
+  Mean time (µs): 394.4192
+  Median time (µs): 393.7570
+  Std dev (µs): 4.1320
+  Min time (µs): 388.8030
+  Max time (µs): 467.7720
+
+levelorder:
+  Mean time (µs): 128.9792
+  Median time (µs): 127.8150
+  Std dev (µs): 6.4403
+  Min time (µs): 124.3790
+  Max time (µs): 220.6380
+
+is_ultrametric:
+  Mean time (µs): 268.0245
+  Median time (µs): 266.5885
+  Std dev (µs): 6.2696
+  Min time (µs): 259.5060
+  Max time (µs): 351.5380
+
+Plot saved to 'cogent3_traverse.png'

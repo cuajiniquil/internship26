@@ -128,9 +128,11 @@ def traverse_tree_levelorder(tree):
 
 
 # Create test tree
-np.random.seed(273)
-print("\nGenerating large ultrametric tree for benchmark...")
-test_tree = create_balanced_ultrametric_tree(10000)
+print("\nExtracting trees from nwk files...")
+# Trees generated in R:
+ultra1k = open("ultra1k.nwk").readlines()
+parsedu1k = toytree.tree(ultra1k[0])
+test_tree = parsedu1k
 
 print("Starting benchmarks...")
 sstart = time.perf_counter()

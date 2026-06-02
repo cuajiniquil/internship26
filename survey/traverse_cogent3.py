@@ -5,6 +5,7 @@ Generates ultrametric trees and measures traversal time.
 """
 
 import time
+from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from cogent3 import make_tree
@@ -131,19 +132,21 @@ def traverse_tree_levelorder(tree):
     return count
 
 
-# Create test tree with smaller size for cogent3 (tree construction can be slow)
-np.random.seed(273)
-print("\nGenerating large ultrametric tree for benchmark...")
+print("\nExtracting trees from nwk files...")
+# Trees genereated in R:
+def load_newick_tree(file_path):
+    """Load a Newick tree from disk using cogent3's native parser."""
+    return make_tree(Path(file_path).read_text().strip())
 
-# Note: For cogent3, using a smaller tree size as recursive tree building is slower
-test_tree = create_balanced_ultrametric_tree(1000)
+
+parsedu1k = load_newick_tree("ultra1k.nwk")
 
 print("Starting benchmarks...")
 sstart = time.perf_counter()
-sres_preorder = benchmark_sys(lambda: traverse_tree(test_tree), 1000)
-sres_postorder = benchmark_sys(lambda: traverse_tree_postorder(test_tree), 1000)
-sres_levelorder = benchmark_sys(lambda: traverse_tree_levelorder(test_tree), 1000)
-sres_ultrametric = benchmark_sys(lambda: is_ultrametric(test_tree), 1000)
+sres_preorder = benchmark_sys(lambda: traverse_tree(parsedu1k), 1000)
+sres_postorder = benchmark_sys(lambda: traverse_tree_postorder(parsedu1k), 1000)
+sres_levelorder = benchmark_sys(lambda: traverse_tree_levelorder(parsedu1k), 1000)
+sres_ultrametric = benchmark_sys(lambda: is_ultrametric(parsedu1k), 1000)
 send = time.perf_counter()
 
 print(f"Benchmark completed in {send - sstart:.2f} seconds")

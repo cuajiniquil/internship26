@@ -63,27 +63,20 @@ print("\nTest tree tip names:", [tip.name for tip in trs.tips()])
 #2: tree traversing benchmarks
 #================================
 
-def benchmark_sys(fn, times):
-    """
-    Benchmark function execution time.
-    fn: callable to benchmark
-    times: number of iterations (warmup + actual)
-    Returns: list of execution times in microseconds (excluding warmup)
-    """
+def benchmark_sys(tree_set, fn, times):
+    """Benchmark function execution time over a list of trees."""
     ttaken = []
-    
-    # +1 to account for warmup iteration
-    for t in range(times + 1):
+
+    fn(tree_set[0])
+
+    for t in range(times):
+        tree = tree_set[t % len(tree_set)]
         tstart = time.perf_counter()
-        fn()
+        fn(tree)
         tend = time.perf_counter()
-        
-        # Convert to microseconds
-        elapsed_us = (tend - tstart) * 1e6
-        ttaken.append(elapsed_us)
-    
-    # Return all except warmup iteration
-    return ttaken[1:]
+        ttaken.append((tend - tstart) * 1e6)
+
+    return ttaken
 
 
 def create_balanced_ultrametric_tree(num_taxa):
@@ -133,69 +126,77 @@ def traverse_tree_levelorder(tree):
 
 
 print("\nExtracting trees from nwk files...")
-# Trees genereated in R:
-def load_newick_tree(file_path):
-    """Load a Newick tree from disk using cogent3's native parser."""
-    return make_tree(Path(file_path).read_text().strip())
+
+def load_newick_trees(file_path):
+    trees = []
+    with open(file_path) as handle:
+        for line in handle:
+            line = line.strip()
+            if line:
+                trees.append(make_tree(line))
+    return trees
 
 
-parsedu1k = load_newick_tree("ultra1k.nwk")
+ultra1k = load_newick_trees("ultra1k.nwk")
+hetero1k = load_newick_trees("hetero1k.nwk")
 
 print("Starting benchmarks...")
 sstart = time.perf_counter()
-sres_preorder = benchmark_sys(lambda: traverse_tree(parsedu1k), 1000)
-sres_postorder = benchmark_sys(lambda: traverse_tree_postorder(parsedu1k), 1000)
-sres_levelorder = benchmark_sys(lambda: traverse_tree_levelorder(parsedu1k), 1000)
-sres_ultrametric = benchmark_sys(lambda: is_ultrametric(parsedu1k), 1000)
+
+ultra_results = {
+    "preorder": benchmark_sys(ultra1k, traverse_tree, 1000),
+    "postorder": benchmark_sys(ultra1k, traverse_tree_postorder, 1000),
+    "levelorder": benchmark_sys(ultra1k, traverse_tree_levelorder, 1000),
+    "is_ultrametric": benchmark_sys(ultra1k, is_ultrametric, 1000),
+}
+
+hetero_results = {
+    "preorder": benchmark_sys(hetero1k, traverse_tree, 1000),
+    "postorder": benchmark_sys(hetero1k, traverse_tree_postorder, 1000),
+    "levelorder": benchmark_sys(hetero1k, traverse_tree_levelorder, 1000),
+    "is_ultrametric": benchmark_sys(hetero1k, is_ultrametric, 1000),
+}
+
 send = time.perf_counter()
 
 print(f"Benchmark completed in {send - sstart:.2f} seconds")
-
-# Combine all results
-all_times = sres_preorder + sres_postorder + sres_levelorder + sres_ultrametric
-all_methods = (
-    ['preorder'] * len(sres_preorder) +
-    ['postorder'] * len(sres_postorder) +
-    ['levelorder'] * len(sres_levelorder) +
-    ['is_ultrametric'] * len(sres_ultrametric)
-)
-
-cogent3_df = {
-    'method': all_methods,
-    'time': all_times
-}
 
 
 #================================
 # 3: plotting and statistics
 #================================
 
-print("\n=== cogent3 Benchmark Statistics ===")
-for method_name, method_times in [
-    ('preorder', sres_preorder),
-    ('postorder', sres_postorder),
-    ('levelorder', sres_levelorder),
-    ('is_ultrametric', sres_ultrametric)
-]:
-    print(f"\n{method_name}:")
-    print(f"  Mean time (µs): {np.mean(method_times):.4f}")
-    print(f"  Median time (µs): {np.median(method_times):.4f}")
-    print(f"  Std dev (µs): {np.std(method_times):.4f}")
-    print(f"  Min time (µs): {np.min(method_times):.4f}")
-    print(f"  Max time (µs): {np.max(method_times):.4f}")
 
-# Create violin plot comparing all methods
-fig, ax = plt.subplots(figsize=(10, 6))
-data_by_method = [sres_preorder, sres_postorder, sres_levelorder, sres_ultrametric]
-positions = [1, 2, 3, 4]
-ax.violinplot(data_by_method, positions=positions, widths=0.7)
-ax.set_ylabel('Time (microseconds)')
-ax.set_title('cogent3 Tree Traversal Methods Comparison')
-ax.set_xticks(positions)
-ax.set_xticklabels(['preorder', 'postorder', 'levelorder', 'is_ultrametric'])
-ax.grid(axis='y', alpha=0.3)
+def print_stats(tree_label, results):
+    print(f"\n=== cogent3 Benchmark Statistics ({tree_label}) ===")
+    for method_name in ['preorder', 'postorder', 'levelorder', 'is_ultrametric']:
+        method_times = results[method_name]
+        print(f"\n{method_name}:")
+        print(f"  Mean time (µs): {np.mean(method_times):.4f}")
+        print(f"  Median time (µs): {np.median(method_times):.4f}")
+        print(f"  Std dev (µs): {np.std(method_times):.4f}")
+        print(f"  Min time (µs): {np.min(method_times):.4f}")
+        print(f"  Max time (µs): {np.max(method_times):.4f}")
 
-plt.tight_layout()
-plt.savefig('cogent3_traverse.png', dpi=100)
-print("\nPlot saved to 'cogent3_traverse.png'")
-plt.close()
+
+def save_plot(results, title, filename):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    data_by_method = [results['preorder'], results['postorder'], results['levelorder'], results['is_ultrametric']]
+    positions = [1, 2, 3, 4]
+    ax.violinplot(data_by_method, positions=positions, widths=0.7)
+    ax.set_ylabel('Time (microseconds)')
+    ax.set_title(title)
+    ax.set_xticks(positions)
+    ax.set_xticklabels(['preorder', 'postorder', 'levelorder', 'is_ultrametric'])
+    ax.grid(axis='y', alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(filename, dpi=100)
+    print(f"\nPlot saved to '{filename}'")
+    plt.close()
+
+
+print_stats('ultrametric', ultra_results)
+print_stats('heterochronic', hetero_results)
+save_plot(ultra_results, 'cogent3 Tree Traversal Methods Comparison - Ultrametric', 'cogent3_traverse_ultra.png')
+save_plot(hetero_results, 'cogent3 Tree Traversal Methods Comparison - Heterochronic', 'cogent3_traverse_hetero.png')

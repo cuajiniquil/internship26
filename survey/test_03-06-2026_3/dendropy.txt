@@ -1,0 +1,43 @@
+Generating initial test trees...
+Ultrametric test tree is ultrametric: True
+Non-ultrametric test tree is ultrametric: False
+
+Test tree root: <Node object at 0x7f1c6bd52870: 'None' (None)>
+Test tree number of leaves: 1000
+
+Extracting trees from nwk files...
+
+Starting benchmarks...
+Benchmark completed in 1.38 seconds
+
+=== dendropy Benchmark Statistics ===
+
+preorder:
+  Mean time (µs): 391.9940
+  Median time (µs): 391.6770
+  Std dev (µs): 3.9029
+  Min time (µs): 379.4090
+  Max time (µs): 415.1760
+
+postorder:
+  Mean time (µs): 361.0963
+  Median time (µs): 360.4440
+  Std dev (µs): 3.6636
+  Min time (µs): 355.2940
+  Max time (µs): 407.8830
+
+levelorder:
+  Mean time (µs): 210.0531
+  Median time (µs): 209.5020
+  Std dev (µs): 3.2110
+  Min time (µs): 204.5020
+  Max time (µs): 221.2030
+
+is_ultrametric:
+  Mean time (µs): 411.0872
+  Median time (µs): 407.5970
+  Std dev (µs): 11.9409
+  Min time (µs): 396.0200
+  Max time (µs): 602.9780
+
+Plot saved to 'dendropy_traverse.png'

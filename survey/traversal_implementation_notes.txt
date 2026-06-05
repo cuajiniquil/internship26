@@ -4,18 +4,22 @@ This file describes how each script actually performs preorder, postorder,
 levelorder, and is_ultrametric work. It focuses on the local data structures
 and API calls used by the script, not on the abstract traversal idea.
 
----
+------------------------------------------------
 1. traverse_biopython.py
 
-preorder:
+preorder: 
 - Uses tree.find_clades(order="preorder").
 - Biopython returns a generator over Clade objects rooted at tree.root.
 - The script does not store the nodes; it just counts each yielded clade.
-
+- High max time (~14.5ms compared to ~2.5ms)
+- Highest mean time (~2.5ms)
+    
 postorder:
 - Uses tree.find_clades(order="postorder").
 - The iterator yields descendants before their parent clade.
 - The script again just counts the yielded clades.
+- High max time (~14.5ms compared to ~2.5ms)
+- Highest mean time (~2.5ms)
 
 levelorder:
 - Does not use a built-in iterator.
@@ -23,6 +27,7 @@ levelorder:
 - Repeatedly pops the first element with pop(0), counts it, and appends the
   current clade's immediate children via clade.clades.
 - This is a manual breadth-first walk over the concrete child lists.
+- Lowest mean time (<0.5ms)
 
 is_ultrametric:
 - Defines a recursive helper get_leaf_distances(clade, dist).
@@ -34,7 +39,7 @@ is_ultrametric:
 - So the benchmark measures a recursive root-to-tip distance accumulation, not
   a generic tree scan helper.
 
----
+------------------------------------------------
 2. traverse_dendropy.py
 
 preorder:
@@ -57,6 +62,7 @@ levelorder:
 - The node iterator keeps a list of remaining nodes, pops from the front, and
   extends it with each node's immediate children.
 - That makes it a breadth-first walk with explicit queue state.
+- Lowest mean time (~200µs)
 
 is_ultrametric:
 - Starts from tree.seed_node.
@@ -65,8 +71,10 @@ is_ultrametric:
 - Collects one distance per leaf and checks them with np.allclose.
 - The traversal here is a custom root-to-tip recursion over child nodes, not a
   DendroPy ultrametric helper.
+- High max time (~650µs to ~400µs)
+- Highest mean time (~400µs)
 
----
+------------------------------------------------
 3. traverse_ete3.py
 
 preorder:
@@ -75,6 +83,8 @@ preorder:
 - With strategy="preorder", ETE3 visits a node before its descendants and
   walks down the left subtree before the right subtree.
 - The script just iterates and increments a counter.
+- Very low variation (not visible in plot unlike the other methods)
+- Lowest mean time (<0.5ms)
 
 postorder:
 - Uses tree.traverse("postorder").
@@ -85,6 +95,7 @@ levelorder:
 - Uses tree.traverse("levelorder").
 - ETE3 visits nodes level by level from the root, i.e. breadth-first and left
   to right within each depth.
+- Lowest mean time (<0.5ms)
 
 is_ultrametric:
 - Uses an explicit stack of (node, accumulated_distance) tuples.
@@ -92,8 +103,9 @@ is_ultrametric:
 - When a leaf is reached, the first leaf distance becomes the reference.
 - Later leaf distances are compared with np.isclose.
 - The function exits early as soon as a mismatch is found.
+- Highest mean time (~9ms)
 
----
+------------------------------------------------
 4. traverse_cogent3.py
 
 preorder:
@@ -103,18 +115,22 @@ preorder:
 - The implementation uses a stack, pops from the end, yields the current node,
   and pushes children in reverse so left-to-right order is preserved.
 - The script counts each yielded node.
+- Lowest mean time (~150µs)
 
 postorder:
 - Uses tree.postorder().
 - PhyloNode.postorder() yields children before parents.
 - The implementation uses a stack of (node, visited) pairs and reversed child
   order, so the parent is emitted only after its subtree has been handled.
+- High max time (~750µs to ~400µs)
+- Highest mean time (~400µs)
 
 levelorder:
 - Uses tree.levelorder().
 - PhyloNode.levelorder() is breadth-first.
 - The implementation keeps a queue, pops from the front, yields the node, and
   appends its children.
+- Lowest mean time (~150µs)
 
 is_ultrametric:
 - Works recursively from the tree root.
@@ -124,7 +140,7 @@ is_ultrametric:
 - This script's ultrametric check is a manual root-to-tip recursion rather than
   a built-in cogent3 method.
 
----
+------------------------------------------------
 5. traverse_toytree.py
 
 preorder:
@@ -138,11 +154,13 @@ postorder:
 - Uses tree.traverse("postorder").
 - ToyTree's postorder generator uses a queue plus an output stack so nodes are
   emitted after their descendants.
+- Lowest mean time (~100µs)
 
 levelorder:
 - Uses tree.traverse("levelorder").
 - ToyTree's levelorder generator uses a queue and visits nodes breadth-first,
   level by level, from root to tips.
+- Lowest mean time (~100µs) (but higher variation than postorder)
 
 is_ultrametric:
 - First locates the root by iterating over tree.traverse() and selecting the
@@ -150,8 +168,9 @@ is_ultrametric:
 - Uses a recursive helper over node.children.
 - Adds child.dist to the accumulated distance.
 - Collects leaf distances and compares them with np.allclose.
+- Highest mean time (~600µs)
 
----
+------------------------------------------------
 6. traverse_phylo.jl
 
 preorder:
@@ -170,6 +189,7 @@ postorder:
 - This makes the stack behave like a manual postorder traversal.
 - The benchmark therefore measures a custom stateful traversal, not a native
   postorder iterator from the package.
+- Very high max time (155ms compared to <2ms; other methods also have max time but not as drastic, and the other means are also <2ms)
 
 levelorder:
 - Uses a queue = [getroot(tree)].
@@ -185,7 +205,7 @@ is_ultrametric:
 - Collects all leaf distances and compares max(distances) - min(distances)
   against a small tolerance.
 
----
+------------------------------------------------
 7. traverse_ape.r
 
 preorder:
@@ -213,7 +233,7 @@ is_ultrametric:
   on the option argument.
 - The script itself does not spell out the walk.
 
----
+------------------------------------------------
 8. traverse_castor.R
 
 preorder:
@@ -229,38 +249,22 @@ postorder:
 
 levelorder:
 - Not implemented.
-- The script reserves a result slot but fills it with zeros.
 
 is_ultrametric:
 - Implemented as isultramfn(tr).
 - Calls get_all_distances_to_root(tr).
 - Checks whether diff(range(totdist)) is below a small epsilon.
 - So the script uses the spread of root distances as the ultrametric test.
-- This is again a distance-spread check, not a generic tree traversal.
+- This is again a distance-spread check, not a generic tree traversal, so it wasn't measured; needs to be fixed 
 
----
-9. traverse_ggtree.r
-
-preorder, postorder, levelorder:
-- Not actually implemented as traversals in this script.
-- traverse_phylo_tree() only reads tree$edge, tree$edge.length, and
-  tree$tip.label.
-- It does not iterate over nodes or edges in a traversal order.
-- benchmarkSys also references fnctn without calling it, so the traversal code
-  path is not executed as written.
-- As written, this benchmark does not measure a real traversal for ggtree.
-
-is_ultrametric:
-- The script uses ape::is.ultrametric() on the generated trees.
-- ggtree itself is only used for plotting, not traversal logic.
-
----
-10. traverse_phylors/src/main.rs
+------------------------------------------------
+9. traverse_phylors/src/main.rs
 
 preorder:
 - Uses preord_ids(tree.get_root_id()).count().
 - The phylo crate supplies the preorder ID iterator, so the script only counts
   returned node IDs.
+- High max values (~400µs compared to ~50µs mean times for both implemented methods) 
 
 postorder:
 - Uses postord_ids(tree.get_root_id()).count().

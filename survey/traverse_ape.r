@@ -2,112 +2,168 @@ library("ape")
 library("ggplot2")
 
 args <- commandArgs(trailingOnly = TRUE)
-print(args[1])
 setwd(args[1])
-
-#================================
-#1: initial tests
-#================================
-
-trs <- rcoal(1000)
-notU <- read.tree(text = "(((Pan:5,Homo:5):2, Chimp:6, Gorilla:7):4,Worm:10);")
-
-is.ultrametric(trs)
-is.ultrametric(notU)
-
-#================================
-#2: data generation (in comments, eventually make different file)
-#================================
-
-#set.seed(273)
-
-#trsetu1 = lapply(1:1000, function(i) rcoal(1000))
-#trsetu10 = lapply(1:1000, function(i) rcoal(10000))
-#trseth1 = lapply(1:1000, function(i) rtree(1000))
-#trseth10 = lapply(1:1000, function(i) rtree(10000))
-
-#write.tree(trsetu1, file = "ultra1k.nwk")
-#write.tree(trsetu10, file = "ultra10k.nwk")
-#write.tree(trseth1, file = "hetero1k.nwk")
-#write.tree(trseth10, file = "hetero10k.nwk")
-
-#================================
-#3: tree traversal benchmarks
-#================================
 
 benchmarkSys <- function(trset, fn, times) {
   ttaken <- rep(0, times)
-  #warmup:
   fn(trset[[1]])
-  
+
   for (t in 1:times) {
+    tree <- trset[[((t - 1) %% length(trset)) + 1]]
     tstart <- Sys.time()
-    fn(trset[[t]])
+    fn(tree)
     tend <- Sys.time()
     ttaken[t] <- (tend - tstart) * 10^6
   }
-  return(ttaken)
+
+  ttaken
 }
 
-ultra1k <- read.tree("ultra1k.nwk")
-ultra10k <- read.tree("ultra10k.nwk")
-hetero1k <- read.tree("hetero1k.nwk")
-hetero10k <- read.tree("hetero10k.nwk")
+load_newick_trees <- function(file_path) {
+  lines <- readLines(file_path)
+  lines <- lines[nzchar(lines)]
+  lapply(lines, function(line) read.tree(text = line))
+}
 
-start <- list()
-totalt <- list()
+children_map <- function(tree) {
+  split(tree$edge[, 2], tree$edge[, 1])
+}
 
-start[[1]] <- Sys.time()
-res1 <- benchmarkSys(ultra1k, is.ultrametric, 1000)
-totalt[[1]]  <- Sys.time() - start[[1]]
+edge_length_map <- function(tree) {
+  stats::setNames(tree$edge.length, tree$edge[, 2])
+}
 
-start[[2]] <- Sys.time()
-res2 <- benchmarkSys(ultra10k, is.ultrametric, 1000)
-totalt[[2]]  <- Sys.time() - start[[2]]
+traverse_preorder <- function(tree) {
+  root <- Ntip(tree) + 1L
+  children <- children_map(tree)
+  stack <- c(root)
+  count <- 0L
 
-start[[3]] <- Sys.time()
-res3 <- benchmarkSys(hetero1k, is.ultrametric, 1000)
-totalt[[3]]  <- Sys.time() - start[[3]]
+  while (length(stack) > 0) {
+    node <- stack[[length(stack)]]
+    stack <- stack[-length(stack)]
+    count <- count + 1L
+    kids <- children[[as.character(node)]]
+    if (!is.null(kids)) {
+      stack <- c(stack, rev(kids))
+    }
+  }
 
-start[[4]] <- Sys.time()
-res4 <- benchmarkSys(hetero10k, is.ultrametric, 1000)
-totalt[[4]]  <- Sys.time() - start[[4]]
+  count
+}
 
+traverse_postorder <- function(tree) {
+  root <- Ntip(tree) + 1L
+  children <- children_map(tree)
+  stack <- list(list(node = root, visited = FALSE))
+  count <- 0L
 
-apedf <- data.frame(
-  traverse = rep(c("Ultram 1k","Ultram 10k","Heteroc 1k","Heteroc 10k"), each = 1000),
-  time = c(res1,res2,res3,res4)
-)
+  while (length(stack) > 0) {
+    frame <- stack[[length(stack)]]
+    stack <- stack[-length(stack)]
 
+    if (frame$visited) {
+      count <- count + 1L
+    } else {
+      stack[[length(stack) + 1L]] <- list(node = frame$node, visited = TRUE)
+      kids <- children[[as.character(frame$node)]]
+      if (!is.null(kids)) {
+        for (child in rev(kids)) {
+          stack[[length(stack) + 1L]] <- list(node = child, visited = FALSE)
+        }
+      }
+    }
+  }
 
-#================================
-# 4: plotting and statistics
-#================================
+  count
+}
 
-cat("\n=== ape Benchmark Statistics ===\n")
-cat("Ultrametric 1k tips\n")
-summary(apedf$time[apedf$traverse =="Ultram 1k"])
-cat("Ultrametric 10k tips\n")
-summary(apedf$time[apedf$traverse =="Ultram 10k"])
-cat("Heterochronic 1k tips\n")
-summary(apedf$time[apedf$traverse =="Heteroc 1k"])
-cat("Heterochronic 10k tips\n")
-summary(apedf$time[apedf$traverse =="Heteroc 10k"])
-cat("\n=== Total run times for each type ===\n")
-totalt
+traverse_levelorder <- function(tree) {
+  root <- Ntip(tree) + 1L
+  children <- children_map(tree)
+  queue <- c(root)
+  count <- 0L
 
-ggplot(apedf,aes(x = traverse, y = time)) + geom_violin() + labs(x="Tree size", y="Time (micros)")
+  while (length(queue) > 0) {
+    node <- queue[[1]]
+    queue <- queue[-1]
+    count <- count + 1L
+    kids <- children[[as.character(node)]]
+    if (!is.null(kids)) {
+      queue <- c(queue, kids)
+    }
+  }
 
-ggsave("ape_traverse.png", width = 8, height = 6)
+  count
+}
 
+is_ultrametric_manual <- function(tree) {
+  root <- Ntip(tree) + 1L
+  children <- children_map(tree)
+  lengths <- edge_length_map(tree)
+  distances <- numeric(0)
 
-apemin <- apedf[apedf$time < 5000,]
+  visit <- function(node, dist) {
+    kids <- children[[as.character(node)]]
+    if (is.null(kids)) {
+      distances <<- c(distances, dist)
+      return()
+    }
 
-ggplot(apemin,aes(x = traverse, y = time)) + geom_violin() + labs(x="Tree size", y="Time (micros)")
-ggsave("ape_traverse_manualtrim.png", width = 8, height = 6)
+    for (child in kids) {
+      branch_len <- lengths[[as.character(child)]]
+      if (is.null(branch_len)) {
+        branch_len <- 0
+      }
+      visit(child, dist + branch_len)
+    }
+  }
 
+  visit(root, 0)
+  if (length(distances) <= 1) {
+    return(TRUE)
+  }
+  max(distances) - min(distances) < 1e-6
+}
 
-cat("Test if these results are significant:")
+ultra1k <- load_newick_trees("ultra1k.nwk")
+hetero1k <- load_newick_trees("hetero1k.nwk")
 
-#what tests could be done? ASK AGAIN BUT OUT OF CONTEXT (give generic description)
-#kruskal.test(time ~ traverse, data = apedf)
+benchmark_tree_set <- function(tree_set) {
+  list(
+    preorder = benchmarkSys(tree_set, traverse_preorder, 1000),
+    postorder = benchmarkSys(tree_set, traverse_postorder, 1000),
+    levelorder = benchmarkSys(tree_set, traverse_levelorder, 1000),
+    is_ultrametric = benchmarkSys(tree_set, is_ultrametric_manual, 1000)
+  )
+}
+
+print_stats <- function(tree_label, results) {
+  cat(sprintf("\n=== ape Benchmark Statistics (%s) ===\n", tree_label))
+  for (method_name in c("preorder", "postorder", "levelorder", "is_ultrametric")) {
+    method_times <- results[[method_name]]
+    cat(sprintf("\n%s:\n", method_name))
+    print(summary(method_times))
+  }
+}
+
+save_plot <- function(results, title, filename) {
+  plotdf <- data.frame(
+    method = rep(c("preorder", "postorder", "levelorder", "is_ultrametric"), each = 1000),
+    time = c(results$preorder, results$postorder, results$levelorder, results$is_ultrametric)
+  )
+
+  p <- ggplot(plotdf, aes(x = method, y = time)) +
+    geom_violin() +
+    labs(x = "Method", y = "Time (microseconds)", title = title)
+
+  ggsave(filename, plot = p, width = 8, height = 6)
+}
+
+ultra_results <- benchmark_tree_set(ultra1k)
+hetero_results <- benchmark_tree_set(hetero1k)
+
+print_stats("Ultrametric", ultra_results)
+print_stats("Heterochronic", hetero_results)
+save_plot(ultra_results, "ape Tree Traversal Methods Comparison - Ultrametric", "ape_traverse_ultra.png")
+save_plot(hetero_results, "ape Tree Traversal Methods Comparison - Heterochronic", "ape_traverse_hetero.png")

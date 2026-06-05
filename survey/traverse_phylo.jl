@@ -60,23 +60,25 @@ println("\nTest tree leaf count: $(nleaves(trs))")
 # 2: tree traversing benchmarks
 # ================================
 
-function benchmark_sys(fn::Function, times::Int)::Vector{Float64}
-    """
-    Benchmark function execution time.
-    Returns: vector of execution times in microseconds (excluding warmup)
-    """
+
+#replace with @benchmark 
+function benchmark_sys(tree_set, fn::Function, times::Int)::Vector{Float64}
+    """Benchmark function execution time over a list of trees."""
     ttaken = Float64[]
 
-    for t in 1:(times + 1)
+    fn(tree_set[1])
+
+    for t in 1:times
+        tree = tree_set[mod1(t, length(tree_set))]
         tstart = time_ns()
-        fn()
+        fn(tree)
         tend = time_ns()
 
         elapsed_us = (tend - tstart) / 1000.0
         push!(ttaken, elapsed_us)
     end
 
-    return ttaken[2:end]
+    return ttaken
 end
 
 
@@ -85,10 +87,9 @@ function create_balanced_ultrametric_tree(num_taxa::Int)
 end
 
 
-function traverse_tree_preorder(tree::AbstractTree, stack::Vector)::Int
-    empty!(stack)
-    push!(stack, getroot(tree))
+function traverse_tree_preorder_man(tree::AbstractTree)::Int
     count = 0
+    stack = [getroot(tree)]
     while !isempty(stack)
         node = pop!(stack)
         count += 1
@@ -100,28 +101,33 @@ function traverse_tree_preorder(tree::AbstractTree, stack::Vector)::Int
 end
 
 
-function traverse_tree_postorder(tree::AbstractTree, stack::Vector, output::Vector)::Int
-    empty!(stack)
-    empty!(output)
-    push!(stack, getroot(tree))
+function traverse_tree_postorder_man(tree::AbstractTree)::Int
+    """Traverse all nodes in tree (postorder)."""
+    count = 0
+    stack = [getroot(tree)]
+    visited = Set()
+
     while !isempty(stack)
-        node = pop!(stack)
-        push!(output, node)
-        for child in getchildren(tree, node)
-            push!(stack, child)
+        node = last(stack)
+        if node in visited
+            pop!(stack)
+            count += 1
+        else
+            push!(visited, node)
+            for child in getchildren(tree, node)
+                push!(stack, child)
+            end
         end
     end
-    for node in Iterators.reverse(output)
-        # visit
-    end
-    return length(output)
+    return count
 end
 
 
-function traverse_tree_levelorder(tree::AbstractTree, queue::Vector)::Int
-    empty!(queue)
-    push!(queue, getroot(tree))
+function traverse_tree_levelorder_man(tree::AbstractTree)::Int
+    """Traverse all nodes in tree (levelorder)."""
     count = 0
+    queue = [getroot(tree)]
+
     while !isempty(queue)
         node = popfirst!(queue)
         count += 1
@@ -133,30 +139,75 @@ function traverse_tree_levelorder(tree::AbstractTree, queue::Vector)::Int
 end
 
 
-# Create test tree
+function traverse_tree_preorder(tree::AbstractTree)::Int
+    count = 0
+    for _ in traversal(tree, preorder)
+        count += 1
+    end
+    return count
+end
+
+
+function traverse_tree_postorder(tree::AbstractTree)::Int
+    count = 0
+    for _ in traversal(tree, postorder)
+        count += 1
+    end
+    return count
+end
+
+
+function traverse_tree_levelorder(tree::AbstractTree)::Int
+    count = 0
+    for _ in traversal(tree, breadthfirst)
+        count += 1
+    end
+    return count
+end
+
+#load the function
+#read trees (generated in ape)
+#do loops 
+
+# Create test trees
 println("\nExtracting trees from nwk files...")
-# Trees generated in R:
-ultra1k = readlines("ultra1k.nwk")
-parsedu1k = parsenewick(ultra1k[1])
-test_tree = parsedu1k
 
-# Pre-allocate buffers — reused across all benchmark runs, zero heap allocation per call
-preorder_stack   = []
-postorder_stack  = []
-postorder_output = []
-levelorder_queue = []
+function load_newick_trees(file_path::String)
+    trees = Any[]
+    for line in readlines(file_path)
+        stripped = strip(line)
+        if !isempty(stripped)
+            push!(trees, parsenewick(stripped))
+        end
+    end
+    return trees
+end
 
-preorder_fn    = () -> traverse_tree_preorder(test_tree, preorder_stack)
-postorder_fn   = () -> traverse_tree_postorder(test_tree, postorder_stack, postorder_output)
-levelorder_fn  = () -> traverse_tree_levelorder(test_tree, levelorder_queue)
-ultrametric_fn = () -> is_ultrametric(test_tree)
+ultra1k = load_newick_trees("ultra1k.nwk")
+hetero1k = load_newick_trees("hetero1k.nwk")
+
+preorder_fn = traverse_tree_preorder
+postorder_fn = traverse_tree_postorder
+levelorder_fn = traverse_tree_levelorder
+ultrametric_fn = is_ultrametric
 
 println("Starting benchmarks...")
 sstart = time_ns()
-sres_preorder    = benchmark_sys(preorder_fn, 1000)
-sres_postorder   = benchmark_sys(postorder_fn, 1000)
-sres_levelorder  = benchmark_sys(levelorder_fn, 1000)
-sres_ultrametric = benchmark_sys(ultrametric_fn, 1000)
+
+ultra_results = Dict(
+    "preorder" => benchmark_sys(ultra1k, preorder_fn, 1000),
+    "postorder" => benchmark_sys(ultra1k, postorder_fn, 1000),
+    "levelorder" => benchmark_sys(ultra1k, levelorder_fn, 1000),
+    "is_ultrametric" => benchmark_sys(ultra1k, ultrametric_fn, 1000),
+)
+
+hetero_results = Dict(
+    "preorder" => benchmark_sys(hetero1k, preorder_fn, 1000),
+    "postorder" => benchmark_sys(hetero1k, postorder_fn, 1000),
+    "levelorder" => benchmark_sys(hetero1k, levelorder_fn, 1000),
+    "is_ultrametric" => benchmark_sys(hetero1k, ultrametric_fn, 1000),
+)
+
 send = time_ns()
 
 benchmark_time_s = (send - sstart) / 1e9
@@ -166,33 +217,37 @@ println("Benchmark completed in $(round(benchmark_time_s, digits=2)) seconds")
 # 3: plotting and statistics
 # ================================
 
-println("\n=== Phylo.jl Benchmark Statistics ===")
-for (method_name, method_times) in [
-    ("preorder", sres_preorder),
-    ("postorder", sres_postorder),
-    ("levelorder", sres_levelorder),
-    ("is_ultrametric", sres_ultrametric)
-]
-    println("\n$method_name:")
-    println("  Mean time (µs): $(round(mean(method_times), digits=4))")
-    println("  Median time (µs): $(round(median(method_times), digits=4))")
-    println("  Std dev (µs): $(round(std(method_times), digits=4))")
-    println("  Min time (µs): $(round(minimum(method_times), digits=4))")
-    println("  Max time (µs): $(round(maximum(method_times), digits=4))")
+function print_stats(tree_label, results)
+    println("\n=== Phylo.jl Benchmark Statistics ($tree_label) ===")
+    for method_name in ["preorder", "postorder", "levelorder", "is_ultrametric"]
+        method_times = results[method_name]
+        println("\n$method_name:")
+        println("  Mean time (µs): $(round(mean(method_times), digits=4))")
+        println("  Median time (µs): $(round(median(method_times), digits=4))")
+        println("  Std dev (µs): $(round(std(method_times), digits=4))")
+        println("  Min time (µs): $(round(minimum(method_times), digits=4))")
+        println("  Max time (µs): $(round(maximum(method_times), digits=4))")
+    end
 end
 
-# Create violin plot comparing all methods
-fig, ax = subplots(figsize=(10, 6))
-data_by_method = [sres_preorder, sres_postorder, sres_levelorder, sres_ultrametric]
-positions = [1, 2, 3, 4]
-ax.violinplot(data_by_method, positions=positions, widths=0.7)
-ax.set_ylabel("Time (microseconds)")
-ax.set_title("Phylo.jl Tree Traversal Methods Comparison")
-ax.set_xticks(positions)
-ax.set_xticklabels(["preorder", "postorder", "levelorder", "is_ultrametric"])
-ax.grid(true, axis="y", alpha=0.3)
+function save_plot(results, title::String, filename::String)
+    fig, ax = subplots(figsize=(10, 6))
+    data_by_method = [results["preorder"], results["postorder"], results["levelorder"], results["is_ultrametric"]]
+    positions = [1, 2, 3, 4]
+    ax.violinplot(data_by_method, positions=positions, widths=0.7)
+    ax.set_ylabel("Time (microseconds)")
+    ax.set_title(title)
+    ax.set_xticks(positions)
+    ax.set_xticklabels(["preorder", "postorder", "levelorder", "is_ultrametric"])
+    ax.grid(true, axis="y", alpha=0.3)
 
-tight_layout()
-savefig("phylo_jl_traverse.png", dpi=100)
-println("\nPlot saved to 'phylo_jl_traverse.png'")
-close()
+    tight_layout()
+    savefig(filename, dpi=100)
+    println("\nPlot saved to '$filename'")
+    close()
+end
+
+print_stats("Ultrametric", ultra_results)
+print_stats("Heterochronic", hetero_results)
+save_plot(ultra_results, "Phylo.jl Tree Traversal Methods Comparison - Ultrametric", "phylo_jl_traverse_ultra.png")
+save_plot(hetero_results, "Phylo.jl Tree Traversal Methods Comparison - Heterochronic", "phylo_jl_traverse_hetero.png")

@@ -38,14 +38,16 @@ Benchmarking Tree Traversal}
 % ==========================================
 \begin{abstract}
 
+% PART I
 Phylogenetic tree manipulation is essential to evolutionary biology and epidemiology.
-This study presents a survey and benchmarking of 10 phylogenetic packages and tools,
+This study presents a survey and benchmarking of 8 phylogenetic packages and tools,
 evaluating their performance on tree traversal operations (preorder, postorder, level-order) and ultrametricity checking.
 The tests were conducted on randomly generated trees of 1,000 leaves.
 The performance metrics were measured in R-based (\ape, \castor), Python-based (\dendropy, \cogent, \biopython, \ete, \toytree),
-Julia-based (\phylo), Go-based (\gotree) and Rust-based (\phylors) tools.
+and Julia-based (\phylo) tools.
 % PART II: in comment
-% Subsequently, we outline a benchmarking framework for birth-death process inference,
+Subsequently, the best tools were selected and a coalescent likelyhood framework was constructed around them, which has several 
+real-world applications, such as epidemic outbreak modelling.  
 % critical for epidemic outbreak modeling with large real-world datasets.
 
 % 8 for now, 10 if bio++ and phylo-rs included

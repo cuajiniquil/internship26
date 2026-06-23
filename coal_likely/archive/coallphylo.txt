@@ -1,0 +1,427 @@
+#!/usr/bin/env julia
+"""
+Tree traversal benchmark for Phylo.jl package.
+Generates ultrametric trees and measures traversal time.
+"""
+
+using Phylo
+using StatsBase
+using PyPlot
+import Random
+
+# ================================
+# 1: initial tests
+# ================================
+
+println("Generating initial test trees with Phylo.jl...")
+
+# Create an ultrametric tree from Newick format
+ultra_newick = "((A:1,B:1):1,(C:1,D:1):1);"
+trs = parsenewick(ultra_newick)
+
+# Create a non-ultrametric tree for comparison
+non_ultra_newick = "(A:1,B:5);"
+notU = parsenewick(non_ultra_newick)
+
+function is_ultrametric(tree::AbstractTree)::Bool
+    """
+    Check if all leaf nodes are equidistant from root.
+    """
+    function get_leaf_distances(node, dist=0.0)
+        if isleaf(tree, node)
+            return [dist]
+        end
+        distances = Float64[]
+        for child in getchildren(tree, node)
+            branch = getinbound(tree, child)
+            child_dist = dist + getlength(tree, branch)
+            append!(distances, get_leaf_distances(child, child_dist))
+        end
+        return distances
+    end
+
+    distances = get_leaf_distances(getroot(tree))
+    if length(distances) <= 1
+        return true
+    end
+    # Check if all distances are approximately equal
+    return maximum(distances) - minimum(distances) < 1e-10
+end
+
+
+println("Ultrametric test tree is ultrametric: $(is_ultrametric(trs))")
+println("Non-ultrametric test tree is ultrametric: $(is_ultrametric(notU))")
+
+# Print tree info
+println("\nTest tree leaf count: $(nleaves(trs))")
+
+
+# ================================
+# 2: tree traversing benchmarks
+# ================================
+
+
+#replace with @benchmark 
+function benchmark_sys(tree_set, fn::Function, times::Int)::Vector{Float64}
+    """Benchmark function execution time over a list of trees."""
+    ttaken = Float64[]
+
+    fn(tree_set[1])
+
+    for t in 1:times
+        tree = tree_set[mod1(t, length(tree_set))]
+        tstart = time_ns()
+        fn(tree)
+        tend = time_ns()
+
+        elapsed_us = (tend - tstart) / 1000.0
+        push!(ttaken, elapsed_us)
+    end
+
+    return ttaken
+end
+
+
+function create_balanced_ultrametric_tree(num_taxa::Int)
+    return rand(Ultrametric(num_taxa))
+end
+
+
+function traverse_tree_preorder_man(tree::AbstractTree)::Int
+    count = 0
+    stack = [getroot(tree)]
+    while !isempty(stack)
+        node = pop!(stack)
+        count += 1
+        for child in getchildren(tree, node)
+            push!(stack, child)
+        end
+    end
+    return count
+end
+
+
+function traverse_tree_postorder_man(tree::AbstractTree)::Int
+    """Traverse all nodes in tree (postorder)."""
+    count = 0
+    stack = [getroot(tree)]
+    visited = Set()
+
+    while !isempty(stack)
+        node = last(stack)
+        if node in visited
+            pop!(stack)
+            count += 1
+        else
+            push!(visited, node)
+            for child in getchildren(tree, node)
+                push!(stack, child)
+            end
+        end
+    end
+    return count
+end
+
+
+function traverse_tree_levelorder_man(tree::AbstractTree)::Int
+    """Traverse all nodes in tree (levelorder)."""
+    count = 0
+    queue = [getroot(tree)]
+
+    while !isempty(queue)
+        node = popfirst!(queue)
+        count += 1
+        for child in getchildren(tree, node)
+            push!(queue, child)
+        end
+    end
+    return count
+end
+
+
+function traverse_tree_preorder(tree::AbstractTree)::Int
+    count = 0
+    for _ in traversal(tree, preorder)
+        count += 1
+    end
+    return count
+end
+
+
+function traverse_tree_postorder(tree::AbstractTree)::Int
+    count = 0
+    for _ in traversal(tree, postorder)
+        count += 1
+    end
+    return count
+end
+
+
+function traverse_tree_levelorder(tree::AbstractTree)::Int
+    count = 0
+    for _ in traversal(tree, breadthfirst)
+        count += 1
+    end
+    return count
+end
+
+
+# ================================
+# 3: coalescent interval extraction
+# ================================
+
+function _build_intervals(tree::AbstractTree, depths::Dict)
+    """
+    Build coalescent intervals from node depths.
+    Shared helper used by both preorder and levelorder extractors.
+    """
+    leaves   = filter(n -> isleaf(tree, n), collect(keys(depths)))
+    internal = filter(n -> !isleaf(tree, n), collect(keys(depths)))
+
+    present = maximum(depths[l] for l in leaves)
+    ages    = Dict(n => present - d for (n, d) in depths)
+
+    events = vcat(
+        [(time=ages[l], type="sample",     name=string(l)) for l in leaves],
+        [(time=ages[n], type="coalescent", name=string(n)) for n in internal]
+    )
+    sort!(events, by=e -> e.time)
+
+    intervals = []
+    n_active  = 0
+    for i in 1:length(events)-1
+        n_active += events[i].type == "sample" ? 1 : -1
+        push!(intervals, (
+            a         = events[i].time,
+            b         = events[i+1].time,
+            k         = n_active,
+            ends_coal = events[i+1].type == "coalescent"
+        ))
+    end
+
+    return intervals
+end
+
+
+function extract_coalescent_intervals_preorder(tree::AbstractTree)
+    """
+    Extract coalescent intervals using a manual preorder traversal.
+    Reuses the same stack pattern as traverse_tree_preorder_man.
+    """
+    root   = getroot(tree)
+    depths = Dict{typeof(root), Float64}(root => 0.0)
+    stack  = [root]
+
+    while !isempty(stack)
+        node = pop!(stack)
+        for child in getchildren(tree, node)
+            branch = getinbound(tree, child)
+            bl     = branch === nothing ? 0.0 : getlength(tree, branch)
+            depths[child] = depths[node] + bl
+            push!(stack, child)
+        end
+    end
+
+    return _build_intervals(tree, depths)
+end
+
+
+function extract_coalescent_intervals_levelorder(tree::AbstractTree)
+    """
+    Extract coalescent intervals using a manual levelorder traversal.
+    Reuses the same queue pattern as traverse_tree_levelorder_man.
+    """
+    root   = getroot(tree)
+    depths = Dict{typeof(root), Float64}(root => 0.0)
+    queue  = [root]
+
+    while !isempty(queue)
+        node = popfirst!(queue)
+        for child in getchildren(tree, node)
+            branch = getinbound(tree, child)
+            bl     = branch === nothing ? 0.0 : getlength(tree, branch)
+            depths[child] = depths[node] + bl
+            push!(queue, child)
+        end
+    end
+
+    return _build_intervals(tree, depths)
+end
+
+
+const FIXED_PHI0 = 1.0
+const FIXED_R    = 0.023882220114924
+
+function coalescent_loglikelihood(intervals)
+    logL = 0.0
+    log_phi0 = log(FIXED_PHI0)
+    for iv in intervals
+        k, a, b, ends = iv.k, iv.a, iv.b, iv.ends_coal
+        c2 = k * (k - 1) / 2
+        c2 <= 0 && continue
+
+        if FIXED_R == 0
+            logL -= c2 * (b - a) / FIXED_PHI0
+        else
+            logL -= (c2 / (FIXED_PHI0 * FIXED_R)) * (
+                exp(FIXED_R * b) - exp(FIXED_R * a)
+            )
+        end
+
+        if ends
+            logL += log(c2) - log_phi0 + FIXED_R * b
+        end
+    end
+    logL
+end
+
+
+loglik_phylo(tree) = coalescent_loglikelihood(extract_coalescent_intervals(tree))
+
+# Create test trees
+println("\nExtracting trees from nwk files...")
+
+function load_newick_trees(file_path::String)
+    trees = Any[]
+    for line in readlines(file_path)
+        stripped = strip(line)
+        if !isempty(stripped)
+            push!(trees, parsenewick(String(stripped)))
+        end
+    end
+    return trees
+end
+
+ultra1k = load_newick_trees("ultra1k.nwk")
+hetero1k = load_newick_trees("hetero1k.nwk")
+
+preorder_fn = traverse_tree_preorder
+postorder_fn = traverse_tree_postorder
+levelorder_fn = traverse_tree_levelorder
+ultrametric_fn = is_ultrametric
+
+println("Starting benchmarks...")
+sstart = time_ns()
+
+ultra_results = Dict(
+    "preorder" => benchmark_sys(ultra1k, preorder_fn, 1000),
+    "postorder" => benchmark_sys(ultra1k, postorder_fn, 1000),
+    "levelorder" => benchmark_sys(ultra1k, levelorder_fn, 1000),
+    "is_ultrametric" => benchmark_sys(ultra1k, ultrametric_fn, 1000),
+)
+
+hetero_results = Dict(
+    "preorder" => benchmark_sys(hetero1k, preorder_fn, 1000),
+    "postorder" => benchmark_sys(hetero1k, postorder_fn, 1000),
+    "levelorder" => benchmark_sys(hetero1k, levelorder_fn, 1000),
+    "is_ultrametric" => benchmark_sys(hetero1k, ultrametric_fn, 1000),
+)
+
+send = time_ns()
+
+benchmark_time_s = (send - sstart) / 1e9
+println("Benchmark completed in $(round(benchmark_time_s, digits=2)) seconds")
+
+# ================================
+# 4: coalescent interval benchmark and max-finder
+# ================================
+
+# Inspect first heterochronic tree
+ivs = extract_coalescent_intervals_preorder(hetero1k[1])
+println("\nFirst heterochronic tree intervals (preorder extraction):")
+for iv in ivs
+    println("  [$(round(iv.a, digits=6)), $(round(iv.b, digits=6))]  k=$(iv.k)  ends_coal=$(iv.ends_coal)")
+end
+
+# Benchmark interval extraction
+coal_intv_fn = extract_coalescent_intervals_preorder
+coalikely_results = Dict(
+    "intv_extract" => benchmark_sys(hetero1k, coal_intv_fn, 1000),
+)
+
+# Plot
+fig, ax = subplots(figsize=(6, 5))
+ax.violinplot([coalikely_results["intv_extract"]], positions=[1], widths=0.5)
+ax.set_ylabel("Time (microseconds)")
+ax.set_title("Phylo.jl Interval Extraction (preorder)")
+ax.set_xticks([1])
+ax.set_xticklabels(["Het. Intv. Extract"])
+ax.grid(true, axis="y", alpha=0.3)
+tight_layout()
+savefig("phylo_jl_coal_intervals_preorder.png", dpi=100)
+println("\nPlot saved to 'phylo_jl_coal_intervals_preorder.png'")
+close()
+
+# Statistics and max-finder (to spot bloated timings / outlier trees)
+times = coalikely_results["intv_extract"]
+
+println("\n=== Phylo.jl Interval Extraction Statistics ===")
+println("  Mean time (µs): $(round(mean(times), digits=4))")
+println("  Median time (µs): $(round(median(times), digits=4))")
+println("  Std dev (µs): $(round(std(times), digits=4))")
+println("  Min time (µs): $(round(minimum(times), digits=4))")
+println("  Max time (µs): $(round(maximum(times), digits=4))")
+
+mx = argmax(times)
+println("\nMax time: $(round(times[mx], digits=4)) µs at index $(mx)")
+#slow_tree = hetero1k[mx]
+
+# Summary without the single worst outlier
+times_no_max = copy(times)
+deleteat!(times_no_max, mx)
+println("\n=== Statistics without max ===")
+println("  Mean time (µs): $(round(mean(times_no_max), digits=4))")
+println("  Median time (µs): $(round(median(times_no_max), digits=4))")
+println("  Std dev (µs): $(round(std(times_no_max), digits=4))")
+println("  Min time (µs): $(round(minimum(times_no_max), digits=4))")
+println("  Max time (µs): $(round(maximum(times_no_max), digits=4))")
+
+# ================================
+# 5: plotting and statistics (traversal benchmarks)
+# ================================
+
+function print_stats(tree_label, results)
+    println("\n=== Phylo.jl Benchmark Statistics ($tree_label) ===")
+    for method_name in ["preorder", "postorder", "levelorder", "is_ultrametric"]
+        method_times = results[method_name]
+        println("\n$method_name:")
+        println("  Mean time (µs): $(round(mean(method_times), digits=4))")
+        println("  Median time (µs): $(round(median(method_times), digits=4))")
+        println("  Std dev (µs): $(round(std(method_times), digits=4))")
+        println("  Min time (µs): $(round(minimum(method_times), digits=4))")
+        println("  Max time (µs): $(round(maximum(method_times), digits=4))")
+    end
+end
+
+function save_plot(results, title::String, filename::String)
+    fig, ax = subplots(figsize=(10, 6))
+    data_by_method = [results["preorder"], results["postorder"], results["levelorder"], results["is_ultrametric"]]
+    positions = [1, 2, 3, 4]
+    ax.violinplot(data_by_method, positions=positions, widths=0.7)
+    ax.set_ylabel("Time (microseconds)")
+    ax.set_title(title)
+    ax.set_xticks(positions)
+    ax.set_xticklabels(["preorder", "postorder", "levelorder", "is_ultrametric"])
+    ax.grid(true, axis="y", alpha=0.3)
+
+    tight_layout()
+    savefig(filename, dpi=100)
+    println("\nPlot saved to '$filename'")
+    close()
+end
+
+print_stats("Ultrametric", ultra_results)
+print_stats("Heterochronic", hetero_results)
+
+println("Hetero first 5:")
+for i in 1:min(5, length(hetero1k))
+    println("  Hetero#$i: ", loglik_phylo(hetero1k[i]))
+end
+
+println("Ultra first 5:")
+for i in 1:min(5, length(ultra1k))
+    println("  Ultra#$i: ", loglik_phylo(ultra1k[i]))
+end
+
+save_plot(ultra_results, "Phylo.jl Tree Traversal Methods Comparison - Ultrametric", "phylo_jl_traverse_ultra.png")
+save_plot(hetero_results, "Phylo.jl Tree Traversal Methods Comparison - Heterochronic", "phylo_jl_traverse_hetero.png")

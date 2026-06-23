@@ -1,0 +1,50 @@
+Generating initial test trees with biopython...
+Ultrametric test tree is ultrametric: True
+Non-ultrametric test tree is ultrametric: False
+
+Test tree structure:
+                                        _____________________________________ A
+  _____________________________________|
+ |                                     |_____________________________________ B
+_|
+ |                                      _____________________________________ C
+ |_____________________________________|
+                                       |_____________________________________ D
+
+Test tree leaf count: 4
+
+Extracting trees from nwk files...
+Starting benchmarks...
+Benchmark completed in 6.36 seconds
+
+=== biopython Benchmark Statistics ===
+
+preorder:
+  Mean time (µs): 2955.1783
+  Median time (µs): 2875.0460
+  Std dev (µs): 573.8482
+  Min time (µs): 2734.0260
+  Max time (µs): 14953.6840
+
+postorder:
+  Mean time (µs): 2887.6043
+  Median time (µs): 2865.3430
+  Std dev (µs): 550.4290
+  Min time (µs): 2759.2930
+  Max time (µs): 15926.4940
+
+levelorder:
+  Mean time (µs): 138.7128
+  Median time (µs): 137.3185
+  Std dev (µs): 7.9343
+  Min time (µs): 133.7410
+  Max time (µs): 242.9780
+
+is_ultrametric:
+  Mean time (µs): 370.4505
+  Median time (µs): 368.9140
+  Std dev (µs): 8.2674
+  Min time (µs): 362.8330
+  Max time (µs): 430.7610
+
+Plot saved to 'biopython_traverse.png'

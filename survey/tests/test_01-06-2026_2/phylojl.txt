@@ -1,0 +1,41 @@
+Generating initial test trees with Phylo.jl...
+Ultrametric test tree is ultrametric: true
+Non-ultrametric test tree is ultrametric: false
+
+Test tree leaf count: 4
+
+Extracting trees from nwk files...
+Starting benchmarks...
+Benchmark completed in 0.98 seconds
+
+=== Phylo.jl Benchmark Statistics ===
+
+preorder:
+  Mean time (µs): 125.8087
+  Median time (µs): 114.2885
+  Std dev (µs): 312.6539
+  Min time (µs): 109.807
+  Max time (µs): 9999.708
+
+postorder:
+  Mean time (µs): 301.1966
+  Median time (µs): 115.606
+  Std dev (µs): 4797.2489
+  Min time (µs): 105.312
+  Max time (µs): 149477.869
+
+levelorder:
+  Mean time (µs): 137.509
+  Median time (µs): 117.188
+  Std dev (µs): 290.7071
+  Min time (µs): 109.218
+  Max time (µs): 9302.789
+
+is_ultrametric:
+  Mean time (µs): 235.4118
+  Median time (µs): 216.964
+  Std dev (µs): 286.9243
+  Min time (µs): 202.894
+  Max time (µs): 6531.668
+
+Plot saved to 'phylo_jl_traverse.png'

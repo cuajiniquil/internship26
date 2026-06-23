@@ -1,0 +1,90 @@
+Generating initial test trees with Phylo.jl...
+Ultrametric test tree is ultrametric: true
+Non-ultrametric test tree is ultrametric: false
+
+Test tree leaf count: 4
+
+Extracting trees from nwk files...
+Starting benchmarks...
+Benchmark completed in 1.09 seconds
+
+=== Phylo.jl Benchmark Statistics ===
+
+preorder:
+  Mean time (µs): 6111.07
+  Median time (µs): 11341.921
+  Std dev (µs): 5557.4952
+  Min time (µs): 189.233
+  Max time (µs): 11341.921
+  Max at index:  471
+
+postorder:
+  Mean time (µs): 21547.2375
+  Median time (µs): 27424.983
+  Std dev (µs): 20790.7218
+  Min time (µs): 134.631
+  Max time (µs): 162479.468
+  Max at index:  987
+
+levelorder:
+  Mean time (µs): 251.8808
+  Median time (µs): 249.806
+  Std dev (µs): 19.7725
+  Min time (µs): 196.046
+  Max time (µs): 314.327
+  Max at index:  984
+
+is_ultrametric:
+  Mean time (µs): 5158.6119
+  Median time (µs): 7304.351
+  Std dev (µs): 3202.8954
+  Min time (µs): 332.951
+  Max time (µs): 7304.351
+  Max at index:  311
+
+Plot saved to 'phylo_jl_traverse.png'
+Generating initial test trees with Phylo.jl...
+Ultrametric test tree is ultrametric: true
+Non-ultrametric test tree is ultrametric: false
+
+Test tree leaf count: 4
+
+Extracting trees from nwk files...
+Starting benchmarks...
+Benchmark completed in 1.11 seconds
+
+=== Phylo.jl Benchmark Statistics ===
+
+preorder:
+  Mean time (µs): 7528.4752
+  Median time (µs): 280.774
+  Std dev (µs): 12730.2368
+  Min time (µs): 133.66
+  Max time (µs): 29744.549
+  Max at index:  754
+
+postorder:
+  Mean time (µs): 78186.0854
+  Median time (µs): 284.831
+  Std dev (µs): 81494.0789
+  Min time (µs): 200.744
+  Max time (µs): 163305.788
+  Max at index:  523
+
+levelorder:
+  Mean time (µs): 5159.4589
+  Median time (µs): 306.641
+  Std dev (µs): 4986.9328
+  Min time (µs): 300.781
+  Max time (µs): 10275.222
+  Max at index:  514
+
+is_ultrametric:
+  Mean time (µs): 6178.8077
+  Median time (µs): 6988.803
+  Std dev (µs): 2174.0821
+  Min time (µs): 255.938
+  Max time (µs): 6988.803
+  Max at index:  123
+
+Plot saved to 'phylo_jl_traverse.png'

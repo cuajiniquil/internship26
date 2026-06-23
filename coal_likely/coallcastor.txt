@@ -1,0 +1,239 @@
+library("castor")
+library("ggplot2")
+
+#SETWD AS BASH ARG
+#args <- commandArgs(trailingOnly = TRUE)
+#setwd(args[1])
+
+#================================
+#1: initial tests
+#================================
+
+#trs <- generate_gene_tree_msc(1000)
+Ult <- read_tree(string = "((A:5,B:5):2,C:7);")
+notU <- read_tree(string = "(((Pan:5,Homo:5):2, Chimp:6, Gorilla:7):4,Worm:10);")
+
+#plot(Ult)
+
+#================================
+#2: tree traversal benchmarks 
+#================================
+
+benchmarkSys <- function(trset, fn, times) {
+  ttaken <- rep(0, times)
+  #warmup?
+  fn(trset[[1]])
+  
+  for (t in 1:times) {
+    tstart <- Sys.time()
+    fn(trset[[t]])
+    tend <- Sys.time()
+    ttaken[t] <- (tend - tstart) * 10^6
+  }
+  return(ttaken)
+}
+
+load_newick_trees <- function(file_path) {
+  lines <- readLines(file_path)
+  lines <- lines[nzchar(lines)]
+  lapply(lines, function(line) read_tree(string = line))
+}
+
+#had to add this fn in order to preserve the benchmarksys structure; 
+#might slow it down - test against manual gad2tip? => res: still fast but does have a bigger gap for warmup
+postorderfn <- function(tr){
+  get_all_distances_to_tip(tr, focal_tip = 1)
+}
+
+#explanation in Running BEAST GUI... convo
+isultramfn <- function(tr) {
+  totdist <- get_all_distances_to_root(tr)
+  return(diff(range(totdist)) < 1*10^-6) #10^-6 is the biggest specificity possible  
+}
+
+
+isultramfn(notU)
+isultramfn(Ult)
+
+
+ultra1k <- load_newick_trees("ultra1k.nwk")
+hetero1k <- load_newick_trees("hetero1k.nwk")
+
+start <- list()
+totalt <- list()
+
+start[[1]] <- Sys.time()
+res1 <- benchmarkSys(ultra1k, get_all_distances_to_root, 1000)
+totalt[[1]]  <- Sys.time() - start[[1]]
+
+start[[2]] <- Sys.time()
+res2 <- benchmarkSys(ultra1k, postorderfn, 1000)
+totalt[[2]]  <- Sys.time() - start[[2]]
+
+start[[3]] <- Sys.time()
+res3 <- rep(0,1000)
+  #benchmarkSys(ultra1k, is.ultrametric, 1000)
+totalt[[3]]  <- Sys.time() - start[[3]]
+
+start[[4]] <- Sys.time()
+res4 <- rep(0,1000)
+  #benchmarkSys(ultra1k, is.ultrametric, 1000)
+totalt[[4]]  <- Sys.time() - start[[4]]
+
+
+castordf <- data.frame(
+  traverse = rep(c("Preorder","Postorder","N/A (LEVELO)","N/A (ULTRAM)"), each = 1000),
+  time = c(res1,res2,res3,res4)
+)
+
+
+#================================
+# 3: plotting and statistics
+#================================
+
+cat("\n=== ape Benchmark Statistics ===\n")
+cat("Preorder traversal \n")
+summary(castordf$time[castordf$traverse =="Ultram 1k"])
+cat("Postorder traversal \n")
+summary(castordf$time[castordf$traverse =="Ultram 10k"])
+cat("Future Levelorder\n")
+summary(castordf$time[castordf$traverse =="Heteroc 1k"])
+cat("Future isUltrametric\n")
+summary(castordf$time[castordf$traverse =="Heteroc 10k"])
+cat("\n=== Total run times for each type ===\n")
+totalt
+
+ggplot(castordf,aes(x = traverse, y = time)) + geom_violin() + labs(x="Tree size", y="Time (micros)")
+
+ggsave("castor_traverse.png", width = 8, height = 6)
+
+
+apemin <- castordf[castordf$time < 500,]
+
+ggplot(apemin,aes(x = traverse, y = time)) + geom_violin() + labs(x="Castor Traversal Methods Comparison", y="Time (micros)")
+ggsave("castor_traverse_manualtrim.png", width = 8, height = 6)
+
+#================================
+# 3: coalescent likelihood tests
+#================================
+
+# interval extraction - native postorder 
+extract_coalescent_intervals <- function(tree) {
+  n_tips  <- length(tree$tip.label)
+  n_nodes <- n_tips + tree$Nnode
+  
+  # native root distances: atomic vector indexed by node number
+  dists <- castor::get_all_distances_to_root(tree, as_edge_count = FALSE)
+  dists <- dists[seq_len(n_nodes)]
+  
+  present <- max(dists[seq_len(n_tips)])
+  ages    <- present - dists
+  
+  events <- data.frame(
+    time = ages,
+    type = c(rep("sample", n_tips), rep("coalescent", tree$Nnode)),
+    name = c(tree$tip.label, as.character((n_tips + 1):n_nodes)),
+    stringsAsFactors = FALSE
+  )
+  events <- events[order(events$time), ]
+  rownames(events) <- NULL
+  
+  n_active  <- 0
+  intervals <- list()
+  for (i in seq_len(nrow(events) - 1)) {
+    n_active <- n_active + ifelse(events$type[i] == "sample", 1L, -1L)
+    intervals[[i]] <- list(
+      a         = events$time[i],
+      b         = events$time[i + 1],
+      k         = n_active,
+      ends_coal = events$type[i + 1] == "coalescent"
+    )
+  }
+  
+  intervals
+}
+
+# ------------------------------------------------------------------
+# Log-likelihood of a coalescent tree under exponential growth.
+#
+# intervals : data.frame with columns t0, t1, k
+#   t0 : start time of interval (older, closer to root)
+#   t1 : end time of interval   (younger, closer to present)
+#   k  : number of active lineages in the interval
+# ------------------------------------------------------------------
+FIXED_PHI0 <- 1.0
+FIXED_R    <- 0.023882220114924
+
+
+coalescent_loglikelihood <- function(intervals,
+                                     phi0 = FIXED_PHI0,
+                                     r    = FIXED_R) {
+  log_phi0 <- log(phi0)
+  logL     <- 0.0
+  
+  for (iv in intervals) {
+    k  <- iv$k
+    a  <- iv$a
+    b  <- iv$b
+    c2 <- k * (k - 1) / 2
+    
+    if (c2 <= 0) next
+
+    # survival term: coalescent rate λ(t) = (1/φ0) * exp(r*t)    
+    if (r == 0) {
+      logL <- logL - c2 * (b - a) / phi0
+    } else {
+      logL <- logL - (c2 / (phi0 * r)) * (exp(r * b) - exp(r * a))
+    }
+    
+    # event term only when the interval ends in a coalescence
+    if (iv$ends_coal) {
+      logL <- logL + log(c2) - log_phi0 + r * b
+    }
+  }
+  
+  logL
+}
+
+
+# Public wrapper: extracts intervals from the castor tree, then
+# computes the coalescent log-likelihood.
+loglik_castor <- function(tree,
+                          phi0 = FIXED_PHI0,
+                          r    = FIXED_R) {
+  intervals <- extract_coalescent_intervals(tree)
+  coalescent_loglikelihood(intervals, phi0, r)
+}
+
+#ivs <- extract_coalescent_intervals(hetero1k[[1]])
+#resc1 <- benchmarkSys(hetero1k, extract_coalescent_intervals, 1000)
+# castcoaldf <- data.frame(
+#   step = rep(c("Het. Intv. Extract"), each = 1000),
+#   time = c(resc1)
+# )
+
+
+liketest <- loglik_castor(hetero1k[[1]])
+
+for (i in 1:5) {
+  print(loglik_castor(hetero1k[[i]]))
+}
+
+resc2 <- benchmarkSys(hetero1k, loglik_castor, 1000)
+castcoaldf <- data.frame(
+  step = rep(c("Het. Coal Likelihood"), each = 1000),
+  time = c(resc2)
+)
+
+ggplot(castcoaldf, aes(x = step, y = time)) + geom_violin()
+summary(resc2)
+mx <- which.max(resc2)
+resc2[mx]
+summary(resc2[-mx])
+
+#================================
+#5: Sanity checks
+#================================
+tree <- read_tree(string ="((t1:0.9383623928,t2:0.5619198801):0.531734891,t3:0.286919398);")
+sntree <- read_tree(string = "((t1:0.9383623928,t2:0.5619198801):0.531734891,t3:0.286919398);")
+loglik_castor(sntree, 10, 0.1)

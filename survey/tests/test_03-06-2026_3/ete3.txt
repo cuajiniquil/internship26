@@ -1,0 +1,50 @@
+Generating initial test trees with ete3...
+Ultrametric test tree is ultrametric: True
+Non-ultrametric test tree is ultrametric: False
+
+Test tree structure:
+
+      /-A
+   /-|
+  |   \-B
+--|
+  |   /-C
+   \-|
+      \-D
+Test tree leaf count: 4
+
+Extracting trees from nwk files...
+Starting benchmarks...
+Benchmark completed in 10.22 seconds
+
+=== ete3 Benchmark Statistics ===
+
+preorder:
+  Mean time (µs): 213.7021
+  Median time (µs): 213.3890
+  Std dev (µs): 5.4979
+  Min time (µs): 204.8530
+  Max time (µs): 300.8620
+
+postorder:
+  Mean time (µs): 752.4162
+  Median time (µs): 751.8710
+  Std dev (µs): 10.2708
+  Min time (µs): 737.5790
+  Max time (µs): 1004.4680
+
+levelorder:
+  Mean time (µs): 178.1868
+  Median time (µs): 177.4670
+  Std dev (µs): 2.4167
+  Min time (µs): 172.7130
+  Max time (µs): 190.3360
+
+is_ultrametric:
+  Mean time (µs): 9063.8174
+  Median time (µs): 9090.5160
+  Std dev (µs): 153.7780
+  Min time (µs): 8677.0030
+  Max time (µs): 9502.7870
+
+Plot saved to 'ete3_traverse.png'

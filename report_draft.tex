@@ -1,3 +1,5 @@
+% latest version : https://www.overleaf.com/project/6a2fd0023e497c7e3ba3b0cb 
+
 \documentclass[11pt, a4paper]{article}
 
 \usepackage{amsmath}
@@ -10,7 +12,7 @@
 
 % New commands for tool names
 \newcommand{\ape}{\textit{ape}}
-\newcommand{\dendropy}{\textit{dendropy}}
+\newcommand{\dendropy}{\textit{DendroPy}}
 \newcommand{\cogent}{\textit{cogent3}}
 \newcommand{\biopython}{\textit{Biopython}}
 \newcommand{\ete}{\textit{ete3}}
@@ -19,11 +21,12 @@
 \newcommand{\gotree}{\textit{gotree}}
 \newcommand{\phylors}{\textit{phylo-rs}}
 \newcommand{\castor}{\textit{castor}}
+\newcommand{\stan}{\textit{Stan}}
+\newcommand{\turing}{\textit{Turing.jl}}
+\newcommand{\biomc}{\textit{BIOMEC}}
 
 \title{A Comparative Analysis of Phylogenetic Tree Manipulation Tools: \\
-Benchmarking Tree Traversal}
-
-% !!! Add birth-death model part to Title if we get to it on time 
+Benchmarking Tree Traversal and Coalescent Likelihood}
 
 \author{Emma Gairaud Hess}
 
@@ -38,23 +41,16 @@ Benchmarking Tree Traversal}
 % ==========================================
 \begin{abstract}
 
-% PART I
-Phylogenetic tree manipulation is essential to evolutionary biology and epidemiology.
+Phylogenetic tree manipulation is essential for evolutionary biology and epidemiology.
 This study presents a survey and benchmarking of 8 phylogenetic packages and tools,
-evaluating their performance on tree traversal operations (preorder, postorder, level-order) and ultrametricity checking.
-The tests were conducted on randomly generated trees of 1,000 leaves.
-The performance metrics were measured in R-based (\ape, \castor), Python-based (\dendropy, \cogent, \biopython, \ete, \toytree),
-and Julia-based (\phylo) tools.
-% PART II: in comment
-Subsequently, the best tools were selected and a coalescent likelyhood framework was constructed around them, which has several 
-real-world applications, such as epidemic outbreak modelling.  
-% critical for epidemic outbreak modeling with large real-world datasets.
+evaluating their performance on tree traversal operations (pre-order, post-order, level-order) and ultrametricity testing.
+The tests were conducted on randomly generated trees of 1{,}000 leaves.
+Performance metrics were measured in R-based (\ape, \castor), Python-based
+(\dendropy, \cogent, \biopython, \ete, \toytree) and Julia-based (\phylo) tools.
+Subsequently, the best-performing tools were selected, and a coalescent likelihood framework was constructed around them, deriving the full log-likelihood of Kingman's n-coalescent for both constant and variable effective population sizes. 
+This framework was then extended to support Bayesian inference via Hamiltonian Monte Carlo (HMC) using probabilistic programming languages (\stan, \turing), with applications in epidemic outbreak modeling and parameter estimation.
 
-% 8 for now, 10 if bio++ and phylo-rs included
-
-\vspace{0.3cm}
-\noindent \textbf{Keywords:} phylogenetics, tree traversal, benchmarking, % birth-death model, outbreak modeling
-
+! leaving out BIOMEC for now since it seems to be specific to electrochem (potential replacement: pyhmc)
 \end{abstract}
 
 \newpage
@@ -66,22 +62,20 @@ real-world applications, such as epidemic outbreak modelling.
 % ==========================================
 \section{Introduction}
 
-Phylogenetic trees are data structures used in evolutionary biology, representing the evolutionary
-relationships between taxa. Modern phylogenetic studies frequently involve large trees (thousands to millions of leaves),
-which requires efficient algorithms to manipulate said trees.
+Phylogenetic trees are fundamental data structures in evolutionary biology, representing the evolutionary relationships between taxa. Modern phylogenetic studies frequently involve large trees (thousands to millions of leaves), whose manipulation requires efficient algorithms.
 
-% PART II: 
-% Additionally, in epidemiology, birth-death processes provide a framework for estimating transmission parameters
-% and the number of unsampled individuals during disease outbreaks. These models require extensive tree traversal and
-% statistical inference, making computational efficiency crucial.
+! cite covid or other article containing >1mill samples (ie https://pmc.ncbi.nlm.nih.gov/articles/PMC10131274/)
 
-Current phylogenetic software is remarkably diverse, with implementations avaliable across multiple programming languages. 
-While many studies focus on phylogenetic inference accuracy, comparative performance evaluation of fundamental tree operations is limited.
+In addition, coalescent processes are used in epidemiology to provide a framework for estimating parameters such as transmission rates and the number of unsampled individuals during disease outbreaks \cite{volz2009,pybus2001}. These models require extensive tree traversal and statistical inference, making computational efficiency crucial as well.
+
+Current phylogenetic software is highly diverse, with implementations available across multiple programming languages. While many studies focus on phylogenetic inference accuracy, comparative performance evaluation of fundamental tree operations is limited.
+
+!! read up PhyloSmew (benchmark BUT for accuracy not computational cost/efficiency)
 
 This report addresses two key objectives:
 \begin{enumerate}
-    \item Benchmarking basic tree operations across several phylogenetic packages
-%    \item Establishing a framework for benchmarking birth-death process inference on large datasets
+    \item Benchmarking basic tree operations across several phylogenetic packages.
+    \item Establishing a mathematical and computational framework for coalescent likelihood evaluation. 
 \end{enumerate}
 
 % ==========================================
@@ -89,85 +83,82 @@ This report addresses two key objectives:
 % ==========================================
 \section{Methods}
 
+% ------------------------------------------
 \subsection{Part I: Tree Traversal Benchmarking}
+% ------------------------------------------
 
 \subsubsection{Benchmark Design}
 
 A standardized benchmarking framework was implemented to evaluate four core operations:
 \begin{itemize}
-    \item \textbf{Preorder traversal:} Root-to-leaf depth-first search (DFS) (fig.1A)
-    \item \textbf{Postorder traversal:} Leaf-to-root DFS (fig.1B)
-    \item \textbf{Level-order traversal:} Queue-based breadth-first search (BFS) (fig.1C)
-    \item \textbf{Ultrametricity checking:} Verifies that all leaves are equidistant from the root (fig.2)
+    \item \textbf{Preorder traversal:} Root-to-leaf depth-first search (DFS) (fig.~1A)
+    \item \textbf{Postorder traversal:} Leaf-to-root DFS (fig.~1B)
+    \item \textbf{Level-order traversal:} Queue-based breadth-first search (BFS) (fig.~1C)
+    \item \textbf{Ultrametricity test:} Verifies that all leaves are equidistant
+          from the root (fig.~2)
 \end{itemize}
 
-% FIGURE 1A, 1B, 1C : shows preorder, postorder and level order traversal on the same tree
-
-% FIGURE 2: shows ultrametric (left) vs heterochronic (right) tree
+! insert R figures from searchillust.r
+! FIGURE 1: preorder (A), postorder (B) and level order (C) traversal on the same tree
+! FIGURE 2: ultrametric (left) vs heterochronic (right) tree
 
 \subsubsection{Tree Generation Procedure}
 
-Test trees were generated in ape using coalescent models of 1,000 and 10,000 leaves:
+Test trees were generated in \ape, with a set seed, by using coalescent models of 1{,}000 leaves:
 \begin{itemize}
-    \item Ultranetric trees: rcoal(n) generates a coalescent tree of n leaves
-    \item Heterochronic trees: rtree(n) generates a general tree of n leaves
+    \item \textbf{Ultrametric trees:} \texttt{rcoal(n)} generates a coalescent tree of $n$ leaves by randomly clustering its tips
+    \item \textbf{Heterochronic trees:} \texttt{rtree(n)} generates a coalescent tree of $n$ leaves by randomly splitting its edges
 \end{itemize}
 
-For each tree type and size, 1,000 trees were generated and stored in nwk files. 
+! find clearer definitions for both
+
+For each tree type, 1{,}000 trees were generated and stored in \texttt{.nwk} format files, guaranteeing the use of an equal tree set across all tested tools. 
 
 \subsubsection{Benchmarking Procedure}
 
-Timing measurements followed a warmup iteration to account for JIT compilation and memory allocation overhead. 
-Execution times were recorded in microseconds.
+Timing measurements were done after a warmup iteration to account for JIT compilation and memory allocation overhead. Execution times were recorded in microseconds using
+\texttt{Sys.time()} (R), \texttt{time.perf\_counter()} (Python) or \texttt{time\_ns()} (Julia).
+
+! despite the warmup there are probably some remaining initialization issues, need to test with a different tree set and/or modify warmup logic
+
+! mention that some time functions are not in microseconds, so they were converted manually (ie time * $10^6$ s -> micros)?
 
 \subsubsection{Tools Evaluated}
 
 \paragraph{\ape} (R package)
 
-Framework: \ape is the foundational R package for phylogenetic analysis. It provides native tree data structures
-using edge lists stored in $n \times 2$ matrices. Tree operations are implemented in compiled C code for performance.
-The package includes native R plotting via base graphics. Benchmarks use the \texttt{is.ultrametric()} function
-from the compiled backend.
+An R package for phylogenetic analysis. It provides native tree data structures using edge lists stored in $n \times 2$ matrices. Tree operations are implemented in compiled C code for performance. Benchmarks use the \texttt{is.ultrametric()} function from the compiled backend.
 
 \paragraph{\castor} (R package)
 
-Framework: [TBD] Specialized R package for tree inference and analysis. To be documented.
+Specialized R package for large-scale tree inference and analysis. \castor\ stores trees using the same \ape-compatible \texttt{phylo} objects, while adding additional routines for ancestral state reconstruction and diversification modeling.
 
 \paragraph{\dendropy} (Python)
 
-Framework: Pure Python implementation of phylogenetic data structures. \dendropy uses object-oriented design with
-Node and Tree classes. Traversal algorithms are implemented in Python, relying on recursive depth-first and
-iterative breadth-first approaches. No compiled backend; performance bottlenecked by Python interpreter overhead.
+Python implementation of phylogenetic data structures. \dendropy\ uses object-oriented design with \texttt{Node} and \texttt{Tree} classes. It has no compiled backend, so performance is bottle-necked by the Python interpreter overhead.
 
 \paragraph{\cogent} (Python)
 
-Framework: \cogent is designed for comparative genomics with phylogenetic capabilities. Implementation strategy
-prioritizes code clarity over raw speed. Includes optional Cython compilation for performance-critical sections.
-Tree operations leverage NumPy-based array operations where applicable.
+It's designed for comparative genomics with phylogenetic capabilities. Tree operations include optional Cython compilation for performance-critical sections and NumPy-based array operations where applicable.
+
 
 \paragraph{\biopython} (Python)
 
-Framework: General-purpose bioinformatics package with phylogenetic submodule (\texttt{Bio.Phylo}). Provides
-wrappers around external phylogenetic tools while offering native Python tree structures. Implementation emphasizes
-compatibility with diverse tree formats (Newick, Nexus, PhyloXML) over computational efficiency.
+A general-purpose bioinformatics package with phylogenetic submodule (\texttt{Bio.Phylo}). Provides wrappers around external phylogenetic tools while offering native Python tree structures. Emphasises compatibility over computational efficiency.
 
 \paragraph{\ete} (Python)
 
-Framework: Pure Python implementation optimized for interactive phylogenetic analysis. \ete uses recursive tree structures
-with lazy evaluation of some properties. Recent versions include compiled extensions for critical operations.
-The library emphasizes usability and visualization (including ASCII display) alongside performance.
+Python implementation optimised for interactive phylogenetic analysis. Recent versions include compiled extensions for critical operations. The library emphasises usability and visualisation alongside performance.
 
 \paragraph{\toytree} (Python)
 
-Framework: Lightweight Python tree library designed for rapid phylogenetic analysis. Implements core operations
-in compiled C via Cython bindings, providing significant speedup over pure Python alternatives.
-Integrates with Jupyter notebooks for interactive workflows.
+Lightweight Python tree library with Cython bindings, providing significant speedup over pure Python alternatives. Can be integrated with Jupyter notebooks for interactive workflows.
 
 \paragraph{\phylo} (Julia)
 
-Framework: Julia package providing multiple dispatch-based tree implementations. Julia's LLVM JIT compilation
-enables performance comparable to compiled languages. Tree operations are implemented in Julia with selective
-use of optimized algorithms. Notable: substantial variance in performance indicates JIT warm-up effects across iterations.
+A Julia package providing multiple-dispatch tree implementations. Julia's JIT compilation enables performance comparable to compiled languages.
+
+! this is where the post-order max is extremely high; TO DO: add another nwk file with different trees to see if issue persists (added max index print -   Max at index:  987; likely not a JIT/compiler issue then)
 
 \subsubsection{Statistical Analysis}
 
@@ -177,31 +168,227 @@ For each tool and operation, summary statistics were computed:
     \item Min/max times to identify outliers and JIT compilation effects
 \end{itemize}
 
-Summary visualizations (violin plots, box plots) were generated for qualitative comparison.
+Summary visualisations (violin plots) were generated for qualitative comparison.
 
-\subsection{Part II: Birth-Death Model Benchmarking}
+Tools presenting outlier max values had a max index tracker to verify the source of the problem.
 
-\subsubsection{Outline}
+% ------------------------------------------
+\subsection{Part II: Coalescent Likelihood Framework}
+% ------------------------------------------
 
-Birth-death processes model the transmission dynamics of epidemics, with birth rate $\lambda$ (transmission)
-and death rate $\mu$ (removal/sampling). Given a phylogenetic tree of sampled individuals, inference of
-$\lambda$ and $\mu$ estimates transmission rate and the proportion of infected individuals who were sampled.
+\subsubsection{Biological Motivation}
 
-Key challenges in benchmarking:
+Kingman's $n$-coalescent \cite{kingman1982} is a stochastic process that describes the genealogical ancestry of a random sample of $n$ individuals drawn from a large population assuming exchangeable reproduction, going backwards in time. It is the mathematical foundation for likelihood-based inference of effective population size $N_e$ from phylogenetic trees, and is closely related to birth-death models used in epidemiology and other fields.
+
+! review that exchangeability in kingman's paper does refer to the populations reproduction (and if it's "neutral" evolution or something else) 
+\subsubsection{Kingman's Coalescent Process}
+
+Consider a sample of $n$ lineages observed at time $t = 0$ and going backwards in time. Under the standard Wright-Fisher model with effective population size $N_e$, the probability that any specific pair of lineages coalesces in the previous generation
+is $1/N_e$. The waiting time until the first coalescence event among $k$ extant lineages follows an
+exponential distribution.
+
+\medskip
+\noindent\textbf{Coalescence rate.}
+When $k$ lineages are present, there are $\binom{k}{2} = k(k-1)/2$ distinct pairs,
+each coalescing at rate $1/N_e$, giving a total instantaneous coalescence rate of: 
+
+\begin{equation}
+    \gamma_k = \frac{\binom{k}{2}}{N_e} = \frac{k(k-1)}{2N_e}.
+    \label{eq:coalrate}
+\end{equation}
+
+\noindent\textbf{Waiting time distribution.}
+Denoting the waiting time during which exactly $k$ lineages are present as $w_k$,
+we have
+\begin{equation}
+    w_k \sim \mathrm{Exp}\!\left(\gamma_k\right),
+    \qquad
+    f(w_k) = \gamma_k\, e^{-\gamma_k w_k},
+    \quad w_k \geq 0.
+    \label{eq:waitingtime}
+\end{equation}
+
+Starting with $n$ lineages, the process generates $n - 1$ coalescent events, reducing
+the number of lineages from $n$ down to $1$ (the most recent common ancestor, MRCA).
+The topology of which two lineages merge at each event is chosen uniformly at random
+from the $\binom{k}{2}$ possible pairs.
+
+\subsubsection{Coalescent Likelihood Under Constant Population Size}
+
+Let $\mathcal{T}$ denote a fully resolved rooted binary tree with $n$ leaves and
+coalescent waiting times $w_n, w_{n-1}, \ldots, w_2$, where $w_k$ is the duration
+during which $k$ lineages coexist (measured backwards from the sampling time).
+Assuming a constant effective population size $N_e$, the likelihood of the tree
+given $N_e$ factorises over coalescent intervals:
+
+\begin{equation}
+    \mathcal{L}(N_e \mid \mathcal{T})
+    = \prod_{k=2}^{n}
+      \frac{\binom{k}{2}}{N_e}\,
+      \exp\!\left(-\frac{\binom{k}{2}}{N_e}\,w_k\right).
+    \label{eq:coallikelihood}
+\end{equation}
+
+Taking logarithms yields the log-likelihood
+
+\begin{equation}
+    \ell(N_e \mid \mathcal{T})
+    = \sum_{k=2}^{n}\left[\log\binom{k}{2} - \log N_e
+      - \frac{\binom{k}{2}}{N_e}\,w_k\right]
+    = (n-1)\bigl(-\log N_e\bigr) + C - \frac{S}{N_e},
+    \label{eq:loglik}
+\end{equation}
+
+where $C = \sum_{k=2}^{n}\log\binom{k}{2}$ is a constant independent of $N_e$, and
+
+\begin{equation}
+    S = \sum_{k=2}^{n} \binom{k}{2}\,w_k
+    \label{eq:sstat}
+\end{equation}
+
+is the sufficient statistic for $N_e$: the total coalescent-weighted tree length.
+
+\medskip
+\noindent\textbf{Maximum likelihood estimator.}
+Setting $\partial\ell/\partial N_e = 0$ gives the closed-form MLE
+
+\begin{equation}
+    \hat{N}_e = \frac{S}{n-1}
+              = \frac{1}{n-1}\sum_{k=2}^{n}\binom{k}{2}\,w_k.
+    \label{eq:MLE}
+\end{equation}
+
+This estimator has an intuitive interpretation: $\hat{N}_e$ is the average
+coalescent-pair--weighted waiting time per coalescent event.
+
+\subsubsection{Extension to Variable Effective Population Size}
+
+In practice, $N_e$ may change over time, for example due to population expansions or
+epidemic dynamics. Griffiths and Tavaré (1994) \cite{griffiths1994} generalised the
+coalescent to allow a time-varying effective population size $N_e(t)$, where $t$
+increases into the past from the sampling time $t = 0$.
+
+\medskip
+\noindent\textbf{Likelihood with $N_e(t)$.}
+When $k$ lineages are present starting at backward time $t_k$, the probability density
+of the waiting time $w_k$ is
+
+\begin{equation}
+    f\!\left(w_k \mid t_k,\, N_e(\cdot)\right)
+    = \frac{\binom{k}{2}}{N_e(t_k + w_k)}\,
+      \exp\!\left(-\binom{k}{2}\int_{t_k}^{t_k + w_k}
+      \frac{dt}{N_e(t)}\right),
+    \label{eq:varcoal}
+\end{equation}
+
+and the full log-likelihood is obtained by summing the logarithms of
+Eq.~\eqref{eq:varcoal} over all $n-1$ coalescent intervals.
+
+\medskip
+\noindent\textbf{Piecewise-constant approximation.}
+A tractable and widely used model represents $N_e(t)$ as a piecewise constant function
+that changes values only at a set of pre-specified grid points
+$0 = x_0 < x_1 < \cdots < x_M$ \cite{gill2013}:
+
+\begin{equation}
+    N_e(t) = \theta_j \quad \text{for } t \in [x_{j-1},\, x_j),
+    \quad j = 1, \ldots, M+1.
+    \label{eq:piecewise}
+\end{equation}
+
+Within each grid interval, the integral in Eq.~\eqref{eq:varcoal} reduces to a sum of
+terms of the form $\binom{k}{2}\,\Delta t / \theta_j$, recovering the constant-$N_e$
+structure and enabling efficient recursive computation during tree traversal.
+
+The joint log-likelihood over all intervals and all $n-1$ coalescent events is:
+
+\begin{equation}
+    \ell\!\left(\boldsymbol{\theta} \mid \mathcal{T}\right)
+    = \sum_{j=1}^{M+1}\left[-c_j\log\theta_j - \frac{\mathrm{SS}_j}{\theta_j}\right]
+    + \text{const},
+    \label{eq:pccoal}
+\end{equation}
+
+where $c_j$ is the number of coalescent events in interval $j$, and
+$\mathrm{SS}_j = \sum_k \binom{k}{2}\,\Delta t_{k,j}$ accumulates the
+coalescent-pair--weighted duration of all lineage intervals that overlap grid cell $j$.
+
+\subsubsection{Connection to Birth-Death Models}
+
+The birth-death model of Nee et al.\ (1994) \cite{nee1994} provides an alternative
+likelihood framework for reconstructed phylogenies, parameterised by a per-lineage
+speciation (birth) rate $\lambda$ and extinction (death) rate $\mu$.
+Under complete sampling ($\rho = 1$) of a clade of $n$ extant taxa, the likelihood
+of the reconstructed tree with internal node ages
+$x_1 \geq x_2 \geq \cdots \geq x_{n-1}$ (measured from the present) is
+
+\begin{equation}
+    \mathcal{L}(\lambda, \mu \mid \mathcal{T})
+    = (n-1)!\;\lambda^{n-2}
+      \prod_{i=1}^{n-1} \Phi(x_i),
+    \label{eq:bdlik}
+\end{equation}
+
+where the branching-time density is
+
+\begin{equation}
+    \Phi(t) = \frac{(\lambda - \mu)^2\,e^{(\lambda-\mu)t}}
+               {\left[\lambda\,e^{(\lambda-\mu)t} - \mu\right]^2}.
+    \label{eq:phi}
+\end{equation}
+
+For incomplete random sampling with fraction $\rho \in (0,1]$, the probability
+$p_1(t)$ that a single lineage alive at time $t$ in the past has at least one
+sampled descendant today is
+
+\begin{equation}
+    p_1(t) = \frac{\rho\,(\lambda - \mu)}
+              {\rho\lambda + \bigl[\lambda(1-\rho) - \mu\bigr]\,e^{-(\lambda-\mu)t}},
+    \label{eq:p1}
+\end{equation}
+
+and Eq.~\eqref{eq:bdlik} is modified accordingly.
+
+\medskip
+\noindent\textbf{Epidemiological interpretation.}
+In the context of infectious disease, $\lambda$ represents the per-lineage transmission
+rate and $\mu$ the per-lineage removal (recovery or death) rate, so that
+$R_0 = \lambda/\mu$ is the basic reproduction number. The sampling fraction $\rho$
+represents the proportion of infected individuals whose sequences were obtained.
+Maximising $\ell(\lambda, \mu, \rho \mid \mathcal{T})$ over the observed phylogeny
+of pathogen sequences thus directly estimates key epidemiological parameters.
+
+\subsubsection{Benchmarking Framework for Likelihood Evaluation}
+
+The following computational steps are required to evaluate the coalescent (or
+birth-death) log-likelihood given a phylogenetic tree $\mathcal{T}$:
+
+\begin{enumerate}
+    \item \textbf{Tree traversal} (postorder): collect the $n - 1$ internal node
+          heights $x_i$ and compute coalescent waiting times $w_k$ along the way.
+          This step drives the performance cost and motivates Part~I.
+    \item \textbf{Sufficient statistic computation}: accumulate $S$ (Eq.~\ref{eq:sstat})
+          or, for variable $N_e$, the per-interval sums $\mathrm{SS}_j$
+          (Eq.~\ref{eq:pccoal}).
+    \item \textbf{Likelihood evaluation}: compute Eq.~\eqref{eq:loglik} or
+          Eq.~\eqref{eq:pccoal} for the coalescent model, or Eqs.~\eqref{eq:bdlik}--\eqref{eq:phi}
+          for the birth-death model.
+    \item \textbf{Optimisation}: maximise the log-likelihood with respect to $N_e$
+          (closed-form via Eq.~\ref{eq:MLE}) or with respect to $(\lambda, \mu, \rho)$
+          numerically.
+\end{enumerate}
+
+Benchmark specifications:
 \begin{itemize}
-    \item Large datasets: Real outbreak trees frequently contain $>100,000$ tips
-    \item Sampling effects: Non-random sampling biases parameter estimates
-    \item Computational scalability: Likelihood evaluation requires tree traversal and recursive computation
-\end{itemize}
-
-\subsubsection{Proposed Benchmarking Framework} [TBD]
-
-Benchmark specifications (to be documented):
-\begin{itemize}
-    \item Birth-death tree generation with varying $\lambda$, $\mu$, and sampling proportions
-    \item Parameter inference via maximum likelihood estimation
-    \item Comparison of algorithm efficiency across tools
-    \item Assessment of accuracy/bias under different sampling regimes
+    \item Constant-$N_e$ coalescent likelihood evaluation on the 1{,}000-tip ultrametric
+          trees generated in Part~I.
+    \item Variable-$N_e$ piecewise-constant likelihood (Skyline model) with $M = 10$
+          and $M = 50$ grid points.
+    \item Birth-death likelihood evaluation on the same tree sets.
+    \item Comparison of \ape (\texttt{birthdeath()}), \castor, and \dendropy
+          implementations.
+    \item Assessment of accuracy of $\hat{N}_e$ and $(\hat\lambda, \hat\mu)$ under
+          complete and incomplete sampling regimes.
 \end{itemize}
 
 % ==========================================
@@ -209,72 +396,103 @@ Benchmark specifications (to be documented):
 % ==========================================
 \section{Results and Discussion}
 
+% ------------------------------------------
 \subsection{Tree Traversal Performance}
+% ------------------------------------------
 
 \subsubsection{Overview}
 
-Benchmarking results across eight tools reveal substantial performance variation:
-spanning from $\sim 50$ microseconds (\cogent preorder on 1k-tree) to $\sim 70$ milliseconds (\ete ultrametric check on 1k-tree).
-
+Benchmarking results across eight tools reveal substantial performance variation,
+spanning from $\sim 50\,\mu\text{s}$ (\cogent preorder on 1k-tree) to
+$\sim 70\,\text{ms}$ (\ete ultrametric check on 1k-tree).
 A summary comparison is provided in Table~\ref{tab:summary}.
-
-% TABLE OF BENCHMARKING RESULTS (maybe complement it with result plots?) 
 
 \begin{table}[h!]
 \centering
-\caption{Summary of tool performance rankings across operations. Times in microseconds (1k-leaf trees).}
+\caption{Summary of tool performance rankings across operations.
+         Median times in microseconds (1k-leaf ultrametric trees).}
 \label{tab:summary}
 \begin{tabular}{lcccc}
 \toprule
 \textbf{Tool} & \textbf{Preorder} & \textbf{Postorder} & \textbf{Level-order} & \textbf{Ultrametric} \\
 \midrule
-Cogent3 & 148 & 404 & 161 & 261 \\
-Phylo.jl & 289 & 3,023 & 1,296 & 3,258 \\
-Toytree & 2,086 & 1,858 & 1,790 & 5,756 \\
-ETE3 & 2,196 & 7,921 & 1,998 & 70,056 \\
-Dendropy & 4,466 & 3,836 & 3,790 & 4,954 \\
-Biopython & 28,054 & 28,477 & 7,360 & 3,526 \\
+\cogent       & 148     & 404     & 161     & 261     \\
+\phylo        & 289     & 3{,}023 & 1{,}296 & 3{,}258 \\
+\toytree      & 2{,}086 & 1{,}858 & 1{,}790 & 5{,}756 \\
+\ete          & 2{,}196 & 7{,}921 & 1{,}998 & 70{,}056 \\
+\dendropy     & 4{,}466 & 3{,}836 & 3{,}790 & 4{,}954 \\
+\biopython    & 28{,}054 & 28{,}477 & 7{,}360 & 3{,}526 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsubsection{Compiled vs. Interpreted Implementations}
+\subsubsection{Compiled vs.\ Interpreted Implementations}
 
 \paragraph{High-Performance Tools (\cogent, \toytree)}
 
-\cogent exhibits exceptional performance for traversal operations ($\sim 150-400 \mu s$),
-likely due to algorithmic optimization or compiled extensions in critical sections.
-\toytree also demonstrates strong performance ($\sim 1.8-2.1 \mu s$ for traversal, $\sim 5.8 \mu s$ for ultrametric check),
-consistent with its Cython-based implementation.
+\cogent exhibits exceptional performance for traversal operations
+($\sim 150$--$400\,\mu\text{s}$), likely due to algorithmic optimisation or compiled
+extensions in critical sections. \toytree also demonstrates strong performance
+($\sim 1.8$--$2.1\,\mu\text{s}$ for traversal, $\sim 5.8\,\mu\text{s}$ for
+ultrametric check), consistent with its Cython-based implementation.
 
 \paragraph{Pure Python Tools (\dendropy, \biopython, \ete)}
 
-\dendropy achieves moderate performance ($\sim 3.8-4.5 \mu s$), acceptable for interactive workflows but
-substantially slower than compiled alternatives. \biopython exhibits variable performance: excellent
-on ultrametricity checking ($\sim 3.5 \mu s$) but slow on traversals ($\sim 28 \mu s$). \ete shows
-dramatic overhead on ultrametricity checks ($\sim 70 \mu s$), suggesting algorithmic differences
-or missing optimizations in the implementation.
+\dendropy achieves moderate performance ($\sim 3.8$--$4.5\,\mu\text{s}$), acceptable
+for interactive workflows but substantially slower than compiled alternatives.
+\biopython exhibits variable performance: excellent on ultrametricity checking
+($\sim 3.5\,\mu\text{s}$) but slow on traversals ($\sim 28\,\mu\text{s}$).
+\ete shows dramatic overhead on ultrametricity checks ($\sim 70\,\mu\text{s}$),
+suggesting algorithmic differences or missing optimisations.
 
-\paragraph{Julia (Phylo.jl)}
+\paragraph{Julia (\phylo)}
 
-\phylo demonstrates moderate traversal performance ($\sim 289 \mu s$ preorder) with high variance,
-reflecting JIT compilation warm-up costs. Postorder traversal is notably slower ($\sim 3 \mu s$),
-indicating potential algorithmic inefficiency. The high variance (std. dev. $\sim 5100 \mu s$)
-suggests that performance predictions are unreliable on first-run executions.
+\phylo demonstrates moderate traversal performance ($\sim 289\,\mu\text{s}$
+preorder) with high variance, reflecting JIT compilation warm-up costs.
+Postorder traversal is notably slower ($\sim 3\,\mu\text{s}$), indicating potential
+algorithmic inefficiency. The high standard deviation ($\sim 5{,}100\,\mu\text{s}$)
+makes performance predictions unreliable on first-run executions.
 
-\subsubsection{Tree Size Scaling} [TBD]
+\subsubsection{Tree Size Scaling}
 
-Evaluation on larger trees (10,000 leaves) to assess algorithmic complexity and scalability.
+Evaluation on larger trees (10{,}000 leaves) to assess algorithmic complexity and
+scalability is pending. Expected asymptotic complexity is $O(n)$ for all traversal
+methods; deviations would indicate implementation inefficiencies (e.g.\ quadratic
+list operations).
 
-\subsection{Birth-Death Model Inference} [TBD]
+% ------------------------------------------
+\subsection{Coalescent Likelihood Evaluation}
+% ------------------------------------------
 
-[Section to be completed with benchmarking results once framework is implemented]
+\subsubsection{Constant-$N_e$ MLE Accuracy}
 
-\subsubsection{Parameter Estimation Accuracy} [TBD]
+The closed-form estimator $\hat{N}_e$ (Eq.~\ref{eq:MLE}) was evaluated on the 1{,}000
+ultrametric trees generated with \texttt{rcoal(1000)} under a known true $N_e = 1$.
+Since all trees were generated under Kingman's coalescent, $\hat{N}_e$ is expected to
+be approximately unbiased.
+Full results (bias, variance, coverage of confidence intervals) to be reported.
 
-\subsubsection{Computational Efficiency at Scale} [TBD]
+\subsubsection{Variable-$N_e$ Piecewise Likelihood}
 
-\subsubsection{Sampling Bias Effects} [TBD]
+Implementation of the Skyline log-likelihood (Eq.~\ref{eq:pccoal}) across tools,
+evaluating both correctness (agreement of log-likelihood values) and computational
+cost as a function of the number of grid points $M$.
+To be reported.
+
+\subsubsection{Birth-Death Parameter Estimation}
+
+Evaluation of the birth-death likelihood (Eqs.~\ref{eq:bdlik}--\ref{eq:p1}) on
+heterochronic trees simulated under known $(\lambda, \mu, \rho)$ parameters.
+Performance and accuracy comparison between \ape \texttt{birthdeath()}, \castor, and a
+pure-Python reference implementation.
+To be reported.
+
+\subsubsection{Sampling Bias Effects}
+
+Assessment of parameter estimation bias under non-random (e.g.\ clustered) sampling
+regimes, where the incomplete-sampling correction (Eq.~\ref{eq:p1}) is particularly
+important.
+To be reported.
 
 % ==========================================
 % 4. CONCLUSIONS AND PERSPECTIVES
@@ -284,38 +502,56 @@ Evaluation on larger trees (10,000 leaves) to assess algorithmic complexity and 
 \subsection{Key Findings}
 
 \begin{enumerate}
-    \item \textbf{Substantial Performance Variation:} Performance differences exceed 400-fold across tools,
-    emphasizing the importance of tool selection for computationally intensive phylogenetic analyses.
+    \item \textbf{Substantial Performance Variation:} Performance differences exceed
+          400-fold across tools, emphasising the importance of tool selection for
+          computationally intensive phylogenetic analyses.
 
-    \item \textbf{Compiled Backends Essential:} Tools with compiled implementations (\cogent, \toytree, \phylo JIT)
-    outperform pure Python alternatives by 5--200$\times$.
+    \item \textbf{Compiled Backends Essential:} Tools with compiled implementations
+          (\cogent, \toytree, \phylo JIT) outperform pure Python alternatives by
+          $5$--$200\times$.
 
-    \item \textbf{Algorithm Choice Matters:} Identical operations show significant variance across implementations,
-    suggesting different algorithmic approaches (e.g., \ete's ultrametricity check).
+    \item \textbf{Algorithm Choice Matters:} Identical operations show significant
+          variance across implementations (e.g.\ \ete's ultrametricity check).
 
-    \item \textbf{Language Trade-offs:} R-based tools (\ape) balance performance with extensive statistical capabilities.
-    Julia shows promise but current implementations exhibit high variance, likely reflecting JIT overhead.
+    \item \textbf{Language Trade-offs:} R-based tools (\ape) balance performance with
+          extensive statistical capabilities. Julia shows promise but current
+          implementations exhibit high variance, likely reflecting JIT overhead.
+
+    \item \textbf{Coalescent Likelihood:} The closed-form structure of the constant-$N_e$
+          likelihood (Eq.~\ref{eq:MLE}) reduces inference to a single postorder
+          traversal, making the choice of traversal backend a direct determinant of
+          likelihood computation throughput.
 \end{enumerate}
 
 \subsection{Recommendations}
 
 \begin{itemize}
-    \item \textbf{Interactive analysis:} \ete or \toytree for their visualization and usability
-    \item \textbf{Performance-critical applications:} \cogent or \toytree for maximum throughput
-    \item \textbf{Large-scale inference:} Compiled solutions (\ape with C backend) recommended
-    \item \textbf{Future consideration:} Investigate Rust-based implementations (e.g., shiftcarb, phylo-rs)
+    \item \textbf{Interactive analysis:} \ete or \toytree for visualisation and usability.
+    \item \textbf{Performance-critical traversal:} \cogent or \toytree for maximum
+          throughput.
+    \item \textbf{Coalescent/birth-death likelihood:} \ape (with C backend) or \castor
+          for large-scale inference.
+    \item \textbf{Future consideration:} Investigate Rust-based implementations
+          (e.g.\ \phylors) for extreme-scale datasets.
 \end{itemize}
 
 \subsection{Future Directions}
 
 \begin{enumerate}
-    \item Complete benchmarking of birth-death process inference across tools
-    \item Evaluate performance on real outbreak datasets (>100k leaves)
-    \item Investigate memory usage and scalability limits
-    \item Assess accuracy of parameter estimation under non-random sampling
-    \item Profile code hotspots to identify optimization opportunities
-    \item Explore hybrid approaches combining tools' strengths (e.g., Julia for inference, Python for visualization)
+    \item Expand benchmarking to tools in other languages (Rust: phylo-rs, Go: gotree, etc.). 
+    \item Complete benchmarking of coalescent and birth-death likelihood evaluation
+          across tools.
+    \item Evaluate performance on real outbreak datasets.
+    \item Investigate memory usage and scalability limits.
+    % items added by pasteur ai (verify pertinence/relevance)
+    % \item Assess accuracy of $(\hat\lambda, \hat\mu, \hat\rho)$ under non-random
+          sampling regimes.
+   %  \item Profile code hotspots to identify optimisation opportunities in the
+          likelihood loop.
+    \item Explore hybrid approaches combining tools' strengths (e.g.\ Julia for
+          inference, Python for visualisation).
 \end{enumerate}
+! item 2 should be done by end of internship 
 
 % ==========================================
 % REFERENCES
@@ -330,18 +566,19 @@ APE: analyses of phylogenetics and evolution in R language.
 \textit{Bioinformatics}, 20(2), 289--290.
 
 \bibitem{sukumaran2010dendropy}
-Sukumaran, J., \& Holder, M. T. (2010).
+Sukumaran, J., \& Holder, M.~T. (2010).
 DendroPy: a Python library for phylogenetic computing.
 \textit{Bioinformatics}, 26(12), 1569--1571.
 
 \bibitem{knight2018cogent3}
-Knight, R., \& others (2018).
-Cogent3: a toolkit for machine learning on biological sequences.
+Mucaki, E.~J., \& others (2018).
+Cogent3: a toolkit for biological sequence analysis.
 \textit{Molecular Biology and Evolution}.
 
 \bibitem{cock2009biopython}
-Cock, P. J., Chang, J. T., Chang, K. M., \& others (2009).
-Biopython: freely available Python tools for computational biology and bioinformatics.
+Cock, P.~J.~A., et al.\ (2009).
+Biopython: freely available Python tools for computational biology and
+bioinformatics.
 \textit{Bioinformatics}, 25(3), 422--423.
 
 \bibitem{huerta2016ete3}
@@ -350,57 +587,114 @@ ETE 3: reconstruction, analysis, and visualization of phylogenomic data.
 \textit{Molecular Biology and Evolution}, 33(6), 1635--1638.
 
 \bibitem{eaton2020toytree}
-Eaton, D. A. (2020).
+Eaton, D.~A. (2020).
 toytree: A lightweight Python library for phylogenetics.
 \textit{bioRxiv}.
 
-\bibitem{revell2012phytools}
-Revell, L. B. (2012).
-phytools: An R package for phylogenetic comparative methods and other things.
-\textit{Methods in Ecology and Evolution}, 3(2), 217--223.
+\bibitem{kingman1982}
+Kingman, J.~F.~C. (1982).
+On the genealogy of large populations.
+\textit{Journal of Applied Probability}, 19(A), 27--43.
 
-\bibitem{teufel2018castor}
-Louca, S. (2018).
-Phylogenetic comparative methods on trees with known fossils.
-\textit{Methods in Ecology and Evolution}.
+\bibitem{griffiths1994}
+Griffiths, R.~C., \& Tavar\'{e}, S. (1994).
+Sampling theory for neutral alleles in a varying environment.
+\textit{Philosophical Transactions of the Royal Society B}, 344, 403--410.
+
+\bibitem{nee1994}
+Nee, S., May, R.~M., \& Harvey, P.~H. (1994).
+The reconstructed evolutionary process.
+\textit{Philosophical Transactions of the Royal Society B}, 344, 305--311.
+
+\bibitem{gill2013}
+Gill, M.~S., et al.\ (2013).
+Improving Bayesian population dynamics inference: a coalescent-based model
+for multiple loci.
+\textit{Molecular Biology and Evolution}, 30(3), 713--724.
 
 \bibitem{bezanson2017julia}
-Bezanson, J., Edelman, A., Karpinski, S., \& Shah, V. B. (2017).
+Bezanson, J., Edelman, A., Karpinski, S., \& Shah, V.~B. (2017).
 Julia: A fresh approach to numerical computing.
 \textit{SIAM Review}, 59(1), 65--98.
+fin
+\bibitem{teufel2018castor}
+Louca, S., \& Doebeli, M. (2018).
+Efficient comparative phylogenetics on large trees.
+\textit{Bioinformatics}, 34(6), 1053--1055.
+
+\bibitem{volz2009}
+Volz, E. M., et al. (2009).
+Viral phylodynamics.
+\textit{PLoS Computational Biology}, 5(3), e1000809.
+
+\bibitem{pybus2001}
+Pybus, O. G., et al. (2001).
+Inferring the population size and growth history of HIV-1 from gene genealogies.
+\textit{Journal of Virology}, 75(16), 7529--7539.
 
 \end{thebibliography}
 
 \newpage
 
 % ==========================================
-% APPENDIX: BENCHMARK DATA
+% APPENDIX
 % ==========================================
+\section{Appendix}
+
 \appendix
 
-\section{Detailed Benchmark Results}
+\section{Specifications}
+
+\subsection{System Specifications}
+\begin{itemize}
+    \item OS: Linux Mint 22.3 x86\_64, 6.8.0-111-generic 
+    \item Host: OMEN Gaming Laptop 16-ap0xxx 
+    \item CPU: AMD Ryzen 9 8940HX with Radeon Graphics (32) @ 5.385GHz 
+    \item GPU: AMD ATI 07:00.0 Raphael, NVIDIA 01:00.0 NVIDIA Corporation Device 2d19 
+    \item RAM: 32 GB
+\end{itemize}
 
 \subsection{Tool Specifications}
 
 \begin{itemize}
-    \item \ape: R 4.x, C backend
-    \item \dendropy: Python 3.x, pure Python
-    \item \cogent: Python 3.x, optimized/compiled sections
-    \item \biopython: Python 3.x, pure Python with wrappers
-    \item \ete: Python 3.x, pure Python + compiled extensions (version-dependent)
-    \item \toytree: Python 3.x, Cython + C backend
-    \item \phylo: Julia 1.x, LLVM JIT compilation
+    \item \ape: Version 5.8.1; R 4.x, C backend
+    \item \castor: Version 1.8.5; R 4.x, C backend
+    \item \dendropy: Version 5.0.8; Python 3.x, pure Python
+    \item \cogent: Version 2026.5.19a0; Python 3.x, optimised/compiled sections
+    \item \biopython: Version 1.87; Python 3.x, pure Python with wrappers
+    \item \ete: Version 3.1.3; Python 3.x, pure Python + compiled extensions (version-dependent)
+    \item \toytree: Version 3.0.11; Python 3.x, Cython + C backend
+    \item \phylo: Version 0.5.4; Julia 1.x, LLVM JIT compilation
 \end{itemize}
+
+\subsection{Derivation of the Constant-$N_e$ MLE}
+
+From Eq.~\eqref{eq:loglik}, differentiating with respect to $N_e$:
+
+\begin{equation*}
+    \frac{\partial \ell}{\partial N_e}
+    = -\frac{n-1}{N_e} + \frac{S}{N_e^2} = 0
+    \implies
+    \hat{N}_e = \frac{S}{n-1}.
+\end{equation*}
+
+The second derivative $\partial^2\ell/\partial N_e^2 = (n-1)/N_e^2 - 2S/N_e^3$
+evaluated at $\hat{N}_e$ gives $-(n-1)/\hat{N}_e^2 < 0$, confirming a maximum.
+The Fisher information is $\mathcal{I}(N_e) = (n-1)/N_e^2$, so the asymptotic
+variance of $\hat{N}_e$ is $N_e^2/(n-1)$.
+
+\section{Detailed Results}
 
 \subsection{Performance Plots}
 
-% Placeholder for benchmark plots
-\textit{Plots showing traversal time distributions for each tool to be inserted here.
-Files: ape\_traverse.png, dendropy\_traverse.png, cogent3\_traverse.png,
-biopython\_traverse.png, ete3\_traverse.png, toytree\_traverse.png, phylo\_jl\_traverse.png}
+! Violin plots showing traversal time distributions for each tool to be
+inserted here. Files: \texttt{ape\_traverse\_ultra.png},
+\texttt{*\_traverse\_hetero.png},
+\texttt{*\_traverse\_ultra.png},
 
 \subsection{Raw Benchmark Data Tables}
 
-[Detailed tables with all timing measurements, statistical summaries, and system specifications to be included]
+! Detailed tables with all timing measurements, statistical summaries, and system
+specifications to be included.
 
 \end{document}

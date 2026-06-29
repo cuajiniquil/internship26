@@ -1,0 +1,179 @@
+
+#### Phylo.jl
+
+Starting sanity checks...
+sntree logL (phi0=10, r=0.1): -4.457106
+Expected:                     -4.457106
+
+Loading tree sets...
+
+Ultra first 5:
+  Ultra#1: 10172.9624
+  Ultra#2: 10193.3954
+  Ultra#3: 10193.7532
+  Ultra#4: 10169.5248
+  Ultra#5: 10151.6242
+
+Hetero first 5:
+  Hetero#1: -81086.6396
+  Hetero#2: -86962.0192
+  Hetero#3: -96918.5166
+  Hetero#4: -77007.872
+  Hetero#5: -54301.9769
+
+sntree intervals:
+  a=0.0  b=0.376443  k=1  ends_coal=false
+  a=0.376443  b=0.938362  k=2  ends_coal=true
+  a=0.938362  b=1.183178  k=1  ends_coal=false
+  a=1.183178  b=1.470097  k=2  ends_coal=true
+
+Starting benchmarking...
+
+=== Phylo.jl Benchmark Statistics (Coalescent likelihood) ===
+
+interval extraction:
+  Mean time (µs): 4753.4328
+  Median time (µs): 3266.863
+  Std dev (µs): 47423.9858
+  Min time (µs): 2590.778
+  Max time (µs): 1.50288329e6
+
+log likelihood:
+  Mean time (µs): 4494.7007
+  Median time (µs): 3922.0535
+  Std dev (µs): 9430.6815
+  Min time (µs): 3288.513
+  Max time (µs): 229584.057
+
+Plot saved to 'phylo_jl_coal_likelihood.png'
+
+#### toytree
+
+Loading trees...
+Starting sanity checks...
+Coal Likelihood (Ultra#1):  10172.96
+Coal Likelihood (Ultra#2):  10193.40
+Coal Likelihood (Ultra#3):  10193.75
+Coal Likelihood (Ultra#4):  10169.52
+Coal Likelihood (Ultra#5):  10151.62
+Coal Likelihood (Hetero#1): -81086.64
+Coal Likelihood (Hetero#2): -86962.02
+Coal Likelihood (Hetero#3): -96918.52
+Coal Likelihood (Hetero#4): -77007.87
+Coal Likelihood (Hetero#5): -54301.98
+Test tree logL: -4.457106
+Expected value: -4.457106
+
+Starting benchmarking (heterochronic)...
+
+=== toytree Benchmark Statistics Coalescent likelihood (heterochronic) ===
+
+interval extraction:
+  Mean time (µs): 4770.0956
+  Median time (µs): 4766.9070
+  Std dev (µs): 55.5802
+  Min time (µs): 4402.3400
+  Max time (µs): 5035.7560
+
+log likelihood:
+  Mean time (µs): 5209.0675
+  Median time (µs): 5205.4180
+  Std dev (µs): 44.1009
+  Min time (µs): 4951.6180
+  Max time (µs): 5461.1020
+
+Plot saved to 'toytree_coal_lik.png'
+
+#### cogent3
+
+Loading trees...
+Starting sanity checks...
+Coal Likelihood (Ultra#1):  10172.96
+Coal Likelihood (Ultra#2):  10193.40
+Coal Likelihood (Ultra#3):  10193.75
+Coal Likelihood (Ultra#4):  10169.52
+Coal Likelihood (Ultra#5):  10151.62
+Coal Likelihood (Hetero#1): -81086.64
+Coal Likelihood (Hetero#2): -86962.02
+Coal Likelihood (Hetero#3): -96918.52
+Coal Likelihood (Hetero#4): -77007.87
+Coal Likelihood (Hetero#5): -54301.98
+Test tree logL: -4.457105780828192
+Expected value : -4.457106
+Starting benchmarking...
+
+=== cogent3 Benchmark Statistics Coalescent likelihood (interval extraction) ===
+
+interval extraction:
+  Mean time (µs): 1652.2811
+  Median time (µs): 1644.7235
+  Std dev (µs): 46.3642
+  Min time (µs): 1429.0150
+  Max time (µs): 2070.7660
+
+log likelihood:
+  Mean time (µs): 2141.6421
+  Median time (µs): 2135.4165
+  Std dev (µs): 38.6650
+  Min time (µs): 1848.9710
+  Max time (µs): 2306.7970
+
+Plot saved to 'cogent3_coal_lik.png'
+Loading required package: Rcpp
+Sanity check logL: -4.457106 
+Expected:          -4.457106
+
+Loading trees...
+Loaded 1000 ultrametric trees and 1000 heterochronic trees
+
+First 5 ultrametric log-likelihoods:
+  Ultra#1: 10172.96
+  Ultra#2: 10193.4
+  Ultra#3: 10193.75
+  Ultra#4: 10169.52
+  Ultra#5: 10151.62
+
+First 5 heterochronic log-likelihoods:
+  Hetero#1: -81086.64
+  Hetero#2: -86962.02
+  Hetero#3: -96918.52
+  Hetero#4: -77007.87
+  Hetero#5: -54301.98
+
+Starting benchmarking (ultrametric)...
+
+Starting benchmarking (heterochronic)...
+
+=== castor Benchmark Statistics Coalescent likelihood (ultrametric) ===
+
+interval_extraction:
+  Mean time (µs):    9110.911 
+  Median time (µs):  7812.381 
+  Std dev (µs):      6869.806 
+  Min time (µs):     6465.435 
+  Max time (µs):     154598.2 
+
+log_likelihood:
+  Mean time (µs):    10036.01 
+  Median time (µs):  9037.733 
+  Std dev (µs):      5193.344 
+  Min time (µs):     7251.978 
+  Max time (µs):     142257.5 
+
+=== castor Benchmark Statistics Coalescent likelihood (heterochronic) ===
+
+interval_extraction:
+  Mean time (µs):    9448.424 
+  Median time (µs):  8167.982 
+  Std dev (µs):      6789.169 
+  Min time (µs):     6506.443 
+  Max time (µs):     147383.7 
+
+log_likelihood:
+  Mean time (µs):    10048.76 
+  Median time (µs):  8982.062 
+  Std dev (µs):      3269.395 
+  Min time (µs):     7245.779 
+  Max time (µs):     37717.58 
+Plot saved to 'castor_coal_likelihood_ultra.png'
+Plot saved to 'castor_coal_likelihood_hetero.png'

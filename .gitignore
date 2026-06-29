@@ -1,3 +1,8 @@
 /home/emma/Desktop/LDD3/Stage/project/survey/hetero10k.nwk
 /home/emma/Desktop/LDD3/Stage/project/survey/ultra10k.nwk
-
+trav/hetero10k.nwk
+trav/ultra10k.nwk
+archive/
+coal/archive/
+.RData
+.Rhistory

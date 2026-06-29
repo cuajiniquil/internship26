@@ -1,0 +1,20 @@
+
+#### Phylo.jl
+
+ERROR: SystemError: opening file "/home/emma/Documents/LDD3/Stage/project/coal/test2_29-06-2026/coall_phylov2.jl": No such file or directory
+Stacktrace:
+ [1] include(mod::Module, _path::String)
+   @ Base ./Base.jl:306
+ [2] exec_options(opts::Base.JLOptions)
+   @ Base ./client.jl:317
+ [3] _start()
+   @ Base ./client.jl:550
+
+#### toytree
+
+python3: can't open file '/home/emma/Documents/LDD3/Stage/project/coal/test2_29-06-2026/coall_toytree': [Errno 2] No such file or directory
+
+#### cogent3
+
+python3: can't open file '/home/emma/Documents/LDD3/Stage/project/coal/test2_29-06-2026/coall_cogent': [Errno 2] No such file or directory
+Fatal error: cannot open file 'coall_castor.r': No such file or directory

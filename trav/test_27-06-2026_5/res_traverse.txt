@@ -1,0 +1,529 @@
+
+#### biopython
+
+Generating initial test trees with biopython...
+Ultrametric test tree is ultrametric: True
+Non-ultrametric test tree is ultrametric: False
+
+Test tree structure:
+                                        _____________________________________ A
+  _____________________________________|
+ |                                     |_____________________________________ B
+_|
+ |                                      _____________________________________ C
+ |_____________________________________|
+                                       |_____________________________________ D
+
+Test tree leaf count: 4
+
+Extracting trees from nwk files...
+Starting benchmarks...
+Benchmark completed in 24.32 seconds
+
+=== biopython Benchmark Statistics (ultrametric) ===
+
+preorder:
+  Mean time (µs): 7303.0242
+  Median time (µs): 3238.5910
+  Std dev (µs): 129650.3574
+  Min time (µs): 2361.6730
+  Max time (µs): 4105148.7280
+
+postorder:
+  Mean time (µs): 3482.2204
+  Median time (µs): 3500.1655
+  Std dev (µs): 161.1607
+  Min time (µs): 2274.1890
+  Max time (µs): 4375.3150
+
+levelorder:
+  Mean time (µs): 3259.4607
+  Median time (µs): 3259.4500
+  Std dev (µs): 45.6015
+  Min time (µs): 2039.6400
+  Max time (µs): 3351.5980
+
+is_ultrametric:
+  Mean time (µs): 436.1607
+  Median time (µs): 432.5500
+  Std dev (µs): 39.4458
+  Min time (µs): 405.1790
+  Max time (µs): 1002.4470
+
+=== biopython Benchmark Statistics (heterochronic) ===
+
+preorder:
+  Mean time (µs): 2636.5509
+  Median time (µs): 2584.3055
+  Std dev (µs): 105.8519
+  Min time (µs): 2293.0550
+  Max time (µs): 2945.9780
+
+postorder:
+  Mean time (µs): 3494.7525
+  Median time (µs): 3521.6105
+  Std dev (µs): 173.8221
+  Min time (µs): 2284.2480
+  Max time (µs): 4302.1580
+
+levelorder:
+  Mean time (µs): 3248.0611
+  Median time (µs): 3248.5940
+  Std dev (µs): 49.6760
+  Min time (µs): 1961.3740
+  Max time (µs): 3368.4700
+
+is_ultrametric:
+  Mean time (µs): 435.1744
+  Median time (µs): 432.7610
+  Std dev (µs): 30.5039
+  Min time (µs): 408.8360
+  Max time (µs): 971.4890
+
+Plot saved to 'biopython_traverse_ultra.png'
+
+Plot saved to 'biopython_traverse_hetero.png'
+
+#### cogent3
+
+Generating initial test trees with cogent3...
+Ultrametric test tree is ultrametric: True
+Non-ultrametric test tree is ultrametric: False
+
+Test tree structure:
+((A:1.0,B:1.0):1.0,(C:1.0,D:1.0):1.0);
+
+Test tree tip names: ['A', 'B', 'C', 'D']
+
+Extracting trees from nwk files...
+Starting benchmarks...
+Benchmark completed in 3.48 seconds
+
+=== cogent3 Benchmark Statistics (ultrametric) ===
+
+preorder:
+  Mean time (µs): 310.8337
+  Median time (µs): 307.7965
+  Std dev (µs): 29.0854
+  Min time (µs): 128.1400
+  Max time (µs): 647.1520
+
+postorder:
+  Mean time (µs): 570.3153
+  Median time (µs): 569.4470
+  Std dev (µs): 10.4226
+  Min time (µs): 366.4160
+  Max time (µs): 618.2980
+
+levelorder:
+  Mean time (µs): 341.2208
+  Median time (µs): 341.1840
+  Std dev (µs): 9.7036
+  Min time (µs): 108.8940
+  Max time (µs): 463.7280
+
+is_ultrametric:
+  Mean time (µs): 521.5000
+  Median time (µs): 521.3260
+  Std dev (µs): 12.0123
+  Min time (µs): 297.1370
+  Max time (µs): 598.5810
+
+=== cogent3 Benchmark Statistics (heterochronic) ===
+
+preorder:
+  Mean time (µs): 306.9959
+  Median time (µs): 306.8990
+  Std dev (µs): 7.7247
+  Min time (µs): 127.3890
+  Max time (µs): 331.1910
+
+postorder:
+  Mean time (µs): 560.6463
+  Median time (µs): 561.0460
+  Std dev (µs): 8.0306
+  Min time (µs): 369.4620
+  Max time (µs): 587.0300
+
+levelorder:
+  Mean time (µs): 340.9082
+  Median time (µs): 341.0390
+  Std dev (µs): 8.5137
+  Min time (µs): 107.5510
+  Max time (µs): 357.9510
+
+is_ultrametric:
+  Mean time (µs): 522.6399
+  Median time (µs): 522.7135
+  Std dev (µs): 12.7401
+  Min time (µs): 282.0980
+  Max time (µs): 651.1890
+
+Plot saved to 'cogent3_traverse_ultra.png'
+
+Plot saved to 'cogent3_traverse_hetero.png'
+
+#### dendropy
+
+Generating initial test trees...
+Ultrametric test tree is ultrametric: True
+Non-ultrametric test tree is ultrametric: False
+
+Test tree root: <Node object at 0x73d498347770: 'None' (None)>
+Test tree number of leaves: 1000
+
+Extracting trees from nwk files...
+
+Starting benchmarks...
+Benchmark completed in 5.31 seconds
+
+=== dendropy Benchmark Statistics (ultrametric) ===
+
+preorder:
+  Mean time (µs): 636.8049
+  Median time (µs): 634.6835
+  Std dev (µs): 33.0965
+  Min time (µs): 382.6760
+  Max time (µs): 1161.9270
+
+postorder:
+  Mean time (µs): 579.4898
+  Median time (µs): 578.6640
+  Std dev (µs): 11.5397
+  Min time (µs): 373.0390
+  Max time (µs): 651.7600
+
+levelorder:
+  Mean time (µs): 793.1659
+  Median time (µs): 793.3760
+  Std dev (µs): 19.6917
+  Min time (µs): 235.4710
+  Max time (µs): 819.6450
+
+is_ultrametric:
+  Mean time (µs): 632.0721
+  Median time (µs): 631.8185
+  Std dev (µs): 10.5260
+  Min time (µs): 519.9740
+  Max time (µs): 719.5280
+
+=== dendropy Benchmark Statistics (heterochronic) ===
+
+preorder:
+  Mean time (µs): 648.4877
+  Median time (µs): 648.7350
+  Std dev (µs): 11.5767
+  Min time (µs): 415.8090
+  Max time (µs): 720.7300
+
+postorder:
+  Mean time (µs): 581.4189
+  Median time (µs): 581.2840
+  Std dev (µs): 10.1465
+  Min time (µs): 374.8820
+  Max time (µs): 640.4390
+
+levelorder:
+  Mean time (µs): 801.8225
+  Median time (µs): 802.7880
+  Std dev (µs): 20.6356
+  Min time (µs): 217.8580
+  Max time (µs): 833.1310
+
+is_ultrametric:
+  Mean time (µs): 632.1152
+  Median time (µs): 631.8935
+  Std dev (µs): 12.5925
+  Min time (µs): 528.3700
+  Max time (µs): 868.5370
+
+Plot saved to 'dendropy_traverse_ultra.png'
+
+Plot saved to 'dendropy_traverse_hetero.png'
+
+#### ete3
+
+Generating initial test trees with ete3...
+Ultrametric test tree is ultrametric: True
+Non-ultrametric test tree is ultrametric: False
+
+Test tree structure:
+
+      /-A
+   /-|
+  |   \-B
+--|
+  |   /-C
+   \-|
+      \-D
+Test tree leaf count: 4
+
+Extracting trees from nwk files...
+Starting benchmarks...
+Benchmark completed in 4.00 seconds
+
+=== ete3 Benchmark Statistics (ultrametric) ===
+
+preorder:
+  Mean time (µs): 241.9003
+  Median time (µs): 238.2910
+  Std dev (µs): 47.7089
+  Min time (µs): 199.7040
+  Max time (µs): 1111.9730
+
+postorder:
+  Mean time (µs): 834.3644
+  Median time (µs): 833.7315
+  Std dev (µs): 9.1385
+  Min time (µs): 750.7560
+  Max time (µs): 868.1760
+
+levelorder:
+  Mean time (µs): 553.5168
+  Median time (µs): 553.8570
+  Std dev (µs): 14.0370
+  Min time (µs): 154.8500
+  Max time (µs): 573.3440
+
+is_ultrametric:
+  Mean time (µs): 369.9692
+  Median time (µs): 369.9230
+  Std dev (µs): 6.3206
+  Min time (µs): 311.6130
+  Max time (µs): 390.5310
+
+=== ete3 Benchmark Statistics (heterochronic) ===
+
+preorder:
+  Mean time (µs): 241.3137
+  Median time (µs): 241.1920
+  Std dev (µs): 6.1020
+  Min time (µs): 201.5480
+  Max time (µs): 264.3350
+
+postorder:
+  Mean time (µs): 832.0432
+  Median time (µs): 831.9330
+  Std dev (µs): 8.7449
+  Min time (µs): 761.7370
+  Max time (µs): 860.2920
+
+levelorder:
+  Mean time (µs): 551.3524
+  Median time (µs): 551.8790
+  Std dev (µs): 14.0382
+  Min time (µs): 154.0080
+  Max time (µs): 580.2170
+
+is_ultrametric:
+  Mean time (µs): 367.5743
+  Median time (µs): 366.9220
+  Std dev (µs): 6.4024
+  Min time (µs): 309.3290
+  Max time (µs): 389.5190
+
+Plot saved to 'ete3_traverse_ultra.png'
+
+Plot saved to 'ete3_traverse_hetero.png'
+
+#### toytree
+
+Generating initial test trees with toytree...
+Ultrametric test tree is ultrametric: True
+Non-ultrametric test tree is ultrametric: False
+
+Test tree leaf count: 4
+
+Extracting trees from nwk files...
+Loaded 1000 trees
+Loaded 1000 trees
+Starting benchmarks...
+Benchmark completed in 3.12 seconds
+
+=== toytree Benchmark Statistics (ultrametric) ===
+
+preorder:
+  Mean time (µs): 350.8934
+  Median time (µs): 341.7650
+  Std dev (µs): 49.7701
+  Min time (µs): 197.0190
+  Max time (µs): 850.9340
+
+postorder:
+  Mean time (µs): 278.0504
+  Median time (µs): 277.3845
+  Std dev (µs): 10.2884
+  Min time (µs): 164.6680
+  Max time (µs): 316.2720
+
+levelorder:
+  Mean time (µs): 473.4588
+  Median time (µs): 472.8155
+  Std dev (µs): 12.4095
+  Min time (µs): 151.4630
+  Max time (µs): 509.2340
+
+is_ultrametric:
+  Mean time (µs): 474.1405
+  Median time (µs): 473.5720
+  Std dev (µs): 12.1340
+  Min time (µs): 272.5810
+  Max time (µs): 515.1850
+
+=== toytree Benchmark Statistics (heterochronic) ===
+
+preorder:
+  Mean time (µs): 336.0716
+  Median time (µs): 331.2205
+  Std dev (µs): 19.2274
+  Min time (µs): 180.0370
+  Max time (µs): 397.9350
+
+postorder:
+  Mean time (µs): 275.5017
+  Median time (µs): 274.3490
+  Std dev (µs): 10.7899
+  Min time (µs): 173.2340
+  Max time (µs): 323.3950
+
+levelorder:
+  Mean time (µs): 459.9486
+  Median time (µs): 459.6505
+  Std dev (µs): 12.0651
+  Min time (µs): 154.4690
+  Max time (µs): 503.3130
+
+is_ultrametric:
+  Mean time (µs): 469.9911
+  Median time (µs): 469.1590
+  Std dev (µs): 12.3880
+  Min time (µs): 276.7980
+  Max time (µs): 529.6720
+
+Plot saved to 'toytree_traverse_ultra.png'
+
+Plot saved to 'toytree_traverse_hetero.png'
+
+#### Phylo.jl
+
+Generating initial test trees with Phylo.jl...
+Ultrametric test tree is ultrametric: true
+Non-ultrametric test tree is ultrametric: false
+
+Test tree leaf count: 4
+
+Extracting trees from nwk files...
+Loaded 1000 trees
+Starting benchmarks...
+Benchmark completed in 4.08 seconds
+
+=== Phylo.jl Benchmark Statistics (ultrametric) ===
+
+preorder:
+  Mean time (µs): 1206.8888
+  Median time (µs): 786.2925
+  Std dev (µs): 13096.5098
+  Min time (µs): 166.312
+  Max time (µs): 414934.352
+
+postorder:
+  Mean time (µs): 769.6501
+  Median time (µs): 759.1475
+  Std dev (µs): 70.0189
+  Min time (µs): 483.325
+  Max time (µs): 1387.69
+
+levelorder:
+  Mean time (µs): 752.5727
+  Median time (µs): 748.106
+  Std dev (µs): 68.3235
+  Min time (µs): 130.554
+  Max time (µs): 1016.053
+
+is_ultrametric:
+  Mean time (µs): 1143.8039
+  Median time (µs): 1147.098
+  Std dev (µs): 144.0377
+  Min time (µs): 312.325
+  Max time (µs): 1533.733
+
+Plot saved to 'phylo_jl_traverse_ultra.png'
+
+#### ape
+
+
+=== ape Benchmark Statistics (Ultrametric) ===
+
+preorder:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  23154   23945   24193   24831   25521  100609 
+
+postorder:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  25202   25603   25870   26639   27484   94505 
+
+levelorder:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  22977   23587   23779   24304   23951   35235 
+
+is_ultrametric:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  53282   57478   58616   58443   59155  131502 
+
+=== ape Benchmark Statistics (Heterochronic) ===
+
+preorder:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  23360   24289   24902   25065   25321   99393 
+
+postorder:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  25804   27559   27747   28217   28012   99373 
+
+levelorder:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  22255   23966   24080   24636   24212   98726 
+
+is_ultrametric:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  53370   57697   58448   58643   59145  131369 
+
+#### castor
+
+Loading required package: Rcpp
+
+=== castor Benchmark Statistics (Ultrametric) ===
+
+preorder:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  10340   10556   10616   10882   10692  131226 
+
+postorder:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  13107   13517   13655   14240   13903  139766 
+
+levelorder:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   9713   10013   10113   11122   10234  142692 
+
+is_ultrametric:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  40012   43307   43918   44037   44260   54061 
+
+=== castor Benchmark Statistics (Heterochronic) ===
+
+preorder:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   9963   10121   10176   10452   10305  134685 
+
+postorder:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  13070   13498   13633   14208   13856  138916 
+
+levelorder:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   9652   10037   10143   11002   10257   25170 
+
+is_ultrametric:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  39263   40577   40863   41497   41149  169660 

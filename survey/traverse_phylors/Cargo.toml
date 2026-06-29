@@ -1,8 +1,0 @@
-[package]
-name = "traverse_phylors"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-phylo = "1.2.0"
-plotters = "0.3"
